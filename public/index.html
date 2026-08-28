@@ -6,20 +6,23 @@
   <title>PrismRag - Agentic RAG Chatbot</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg-gradient: radial-gradient(circle at 50% 0%, #1a1e2e 0%, #0c0e14 100%);
-      --surface: rgba(23, 27, 40, 0.75);
+      --surface: rgba(23, 27, 40, 0.78);
       --surface-border: rgba(255, 255, 255, 0.08);
       --primary: #6366f1;
       --primary-hover: #4f46e5;
+      --primary-glow: rgba(99, 102, 241, 0.35);
       --accent: #06b6d4;
+      --accent-glow: rgba(6, 182, 212, 0.3);
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --user-bubble: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
       --bot-bubble: rgba(30, 37, 56, 0.85);
       --bot-bubble-border: rgba(255, 255, 255, 0.06);
+      --success: #22c55e;
     }
 
     * {
@@ -41,26 +44,28 @@
 
     .chat-container {
       width: 100%;
-      max-width: 860px;
-      height: 92vh;
+      max-width: 880px;
+      height: 94vh;
       background: var(--surface);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border: 1px solid var(--surface-border);
       border-radius: 24px;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
       overflow: hidden;
+      position: relative;
     }
 
     .chat-header {
-      padding: 20px 24px;
+      padding: 18px 24px;
       border-bottom: 1px solid var(--surface-border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: rgba(18, 22, 34, 0.6);
+      background: rgba(18, 22, 34, 0.75);
+      z-index: 5;
     }
 
     .header-info {
@@ -77,12 +82,12 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+      box-shadow: 0 4px 14px var(--primary-glow);
       font-size: 22px;
     }
 
     .header-title {
-      font-size: 1.15rem;
+      font-size: 1.12rem;
       font-weight: 700;
       letter-spacing: -0.01em;
       display: flex;
@@ -91,30 +96,48 @@
     }
 
     .header-subtitle {
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       color: var(--text-muted);
     }
 
-    .status-badge {
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mode-badge {
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 12px;
+      padding: 5px 12px;
       border-radius: 20px;
-      background: rgba(34, 197, 94, 0.1);
-      border: 1px solid rgba(34, 197, 94, 0.25);
-      font-size: 0.78rem;
-      color: #4ade80;
+      font-size: 0.75rem;
       font-weight: 600;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #a5b4fc;
+      transition: all 0.3s ease;
+    }
+
+    .mode-badge.rag-active {
+      background: rgba(34, 197, 94, 0.12);
+      border-color: rgba(34, 197, 94, 0.3);
+      color: #4ade80;
     }
 
     .status-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
+      background-color: var(--primary);
+      box-shadow: 0 0 8px var(--primary);
+      animation: pulse 2s infinite;
+    }
+
+    .mode-badge.rag-active .status-dot {
       background-color: #22c55e;
       box-shadow: 0 0 8px #22c55e;
-      animation: pulse 2s infinite;
     }
 
     @keyframes pulse {
@@ -122,9 +145,65 @@
       50% { opacity: 0.6; transform: scale(0.9); }
     }
 
+    .admin-link-btn {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--surface-border);
+      background: rgba(255, 255, 255, 0.04);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .admin-link-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Onboarding progress strip */
+    .onboarding-progress-bar {
+      background: rgba(14, 18, 28, 0.9);
+      padding: 10px 24px;
+      border-bottom: 1px solid var(--surface-border);
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      width: 0%;
+      border-radius: 10px;
+      transition: width 0.4s ease;
+    }
+
     .quick-chips {
       padding: 10px 24px;
-      display: flex;
+      display: none;
       gap: 8px;
       overflow-x: auto;
       border-bottom: 1px solid var(--surface-border);
@@ -161,7 +240,7 @@
       padding: 24px;
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 20px;
       scroll-behavior: smooth;
     }
 
@@ -173,7 +252,7 @@
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
+      from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
@@ -187,32 +266,38 @@
     }
 
     .avatar {
-      width: 34px;
-      height: 34px;
-      border-radius: 10px;
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 17px;
       flex-shrink: 0;
     }
 
     .avatar.bot {
       background: linear-gradient(135deg, var(--primary), var(--accent));
-      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+      box-shadow: 0 3px 10px rgba(99, 102, 241, 0.3);
     }
 
     .avatar.user {
       background: rgba(255, 255, 255, 0.15);
     }
 
+    .bubble-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 100%;
+    }
+
     .bubble {
       padding: 14px 18px;
       border-radius: 18px;
-      font-size: 0.95rem;
+      font-size: 0.94rem;
       line-height: 1.55;
       word-break: break-word;
-      position: relative;
     }
 
     .message.user .bubble {
@@ -227,14 +312,135 @@
       border: 1px solid var(--bot-bubble-border);
       color: #e2e8f0;
       border-bottom-left-radius: 4px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
       white-space: pre-wrap;
+    }
+
+    /* Interactive MCQ / Poll Option Widgets */
+    .question-widget {
+      background: rgba(18, 23, 38, 0.95);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 4px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      animation: fadeIn 0.35s ease;
+    }
+
+    .question-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      align-self: flex-start;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      background: rgba(6, 182, 212, 0.12);
+      border: 1px solid rgba(6, 182, 212, 0.25);
+      padding: 3px 10px;
+      border-radius: 12px;
+    }
+
+    .question-title {
+      font-size: 0.98rem;
+      font-weight: 600;
+      color: #ffffff;
+      line-height: 1.4;
+    }
+
+    .options-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .option-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 12px;
+      color: #e2e8f0;
+      font-size: 0.88rem;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: inherit;
+    }
+
+    .option-btn:hover:not(:disabled) {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: rgba(99, 102, 241, 0.5);
+      transform: translateX(4px);
+      color: #ffffff;
+    }
+
+    .option-btn:disabled {
+      cursor: default;
+      opacity: 0.7;
+    }
+
+    .option-btn.selected {
+      background: linear-gradient(135deg, rgba(79, 70, 229, 0.3), rgba(6, 182, 212, 0.2));
+      border-color: var(--primary);
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .option-indicator {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+
+    .option-btn.selected .option-indicator {
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .completion-card {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: 16px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .completion-icon {
+      font-size: 26px;
+      background: rgba(34, 197, 94, 0.2);
+      border-radius: 12px;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
     }
 
     .loading-indicator {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
       padding: 4px 0;
     }
 
@@ -256,7 +462,7 @@
 
     .chat-footer {
       padding: 18px 24px;
-      background: rgba(18, 22, 34, 0.6);
+      background: rgba(18, 22, 34, 0.75);
       border-top: 1px solid var(--surface-border);
     }
 
@@ -268,7 +474,7 @@
 
     .chat-input {
       flex: 1;
-      background: rgba(10, 13, 20, 0.6);
+      background: rgba(10, 13, 20, 0.65);
       border: 1px solid var(--surface-border);
       border-radius: 16px;
       padding: 14px 20px;
@@ -288,6 +494,12 @@
       color: #64748b;
     }
 
+    .chat-input:disabled {
+      background: rgba(10, 13, 20, 0.3);
+      cursor: not-allowed;
+      border-color: rgba(255, 255, 255, 0.04);
+    }
+
     .send-btn {
       background: var(--primary);
       color: #ffffff;
@@ -301,7 +513,7 @@
       justify-content: center;
       gap: 8px;
       transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      box-shadow: 0 4px 12px var(--primary-glow);
     }
 
     .send-btn:hover:not(:disabled) {
@@ -312,6 +524,7 @@
     .send-btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+      box-shadow: none;
     }
 
     @media (max-width: 640px) {
@@ -336,16 +549,32 @@
         <div class="header-logo">✨</div>
         <div>
           <div class="header-title">Prism RAG Assistant</div>
-          <div class="header-subtitle">Agentic RAG &bull; LangGraph &bull; Qdrant &bull; Groq</div>
+          <div class="header-subtitle">Agentic RAG &bull; Dynamic Question Set &bull; WPD Knowledge</div>
         </div>
       </div>
-      <div class="status-badge">
-        <span class="status-dot"></span>
-        <span>Online</span>
+      <div class="header-right">
+        <div class="mode-badge" id="modeBadge">
+          <span class="status-dot"></span>
+          <span id="modeText">1. Survey Flow</span>
+        </div>
+        <a href="/admin.html" class="admin-link-btn" title="Open Admin Panel">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          <span>Admin</span>
+        </a>
       </div>
     </header>
 
-    <div class="quick-chips">
+    <!-- Onboarding Step Indicator -->
+    <div class="onboarding-progress-bar" id="onboardingProgress">
+      <span id="progressText">Question 1 of 2</span>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <span style="font-size: 0.75rem; color: var(--accent);">Onboarding</span>
+    </div>
+
+    <!-- Quick prompt chips for RAG Mode -->
+    <div class="quick-chips" id="quickChips">
       <button class="chip" onclick="askPreset('What services does Web Prism Dynamics offer?')">🏢 What services does WPD offer?</button>
       <button class="chip" onclick="askPreset('Tell me about the company leadership and founders.')">👥 Leadership & Founders</button>
       <button class="chip" onclick="askPreset('What technologies and expertise does WPD specialize in?')">💻 Tech Stack & Expertise</button>
@@ -353,10 +582,7 @@
     </div>
 
     <main class="messages-area" id="messagesArea">
-      <div class="message bot">
-        <div class="avatar bot">🤖</div>
-        <div class="bubble">Hello! I am your AI assistant powered by Agentic RAG. Ask me questions about <strong>Web Prism Dynamics</strong> or search current topics!</div>
-      </div>
+      <!-- Initial welcome message -->
     </main>
 
     <footer class="chat-footer">
@@ -365,10 +591,11 @@
           type="text"
           id="userInput"
           class="chat-input"
-          placeholder="Ask a question about the company or anything else..."
+          placeholder="Please answer the onboarding questions above to start chatting..."
           autocomplete="off"
+          disabled
         />
-        <button type="submit" id="sendBtn" class="send-btn">
+        <button type="submit" id="sendBtn" class="send-btn" disabled>
           <span>Send</span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -384,6 +611,16 @@
     const input = document.getElementById('userInput');
     const messagesArea = document.getElementById('messagesArea');
     const sendBtn = document.getElementById('sendBtn');
+    const modeBadge = document.getElementById('modeBadge');
+    const modeText = document.getElementById('modeText');
+    const onboardingProgress = document.getElementById('onboardingProgress');
+    const progressText = document.getElementById('progressText');
+    const progressFill = document.getElementById('progressFill');
+    const quickChips = document.getElementById('quickChips');
+
+    let questionsList = [];
+    let currentQuestionIndex = 0;
+    let isSurveyActive = true;
 
     function getSessionId() {
       let sessionId = localStorage.getItem('prismrag_session_id');
@@ -404,15 +641,20 @@
       avatarDiv.className = `avatar ${sender}`;
       avatarDiv.innerHTML = sender === 'user' ? '👤' : '🤖';
 
+      const bubbleContainer = document.createElement('div');
+      bubbleContainer.className = 'bubble-container';
+
       const bubbleDiv = document.createElement('div');
       bubbleDiv.className = 'bubble';
       bubbleDiv.textContent = text;
 
+      bubbleContainer.appendChild(bubbleDiv);
       msgDiv.appendChild(avatarDiv);
-      msgDiv.appendChild(bubbleDiv);
+      msgDiv.appendChild(bubbleContainer);
+
       messagesArea.appendChild(msgDiv);
       messagesArea.scrollTop = messagesArea.scrollHeight;
-      return msgDiv;
+      return { msgDiv, bubbleContainer };
     }
 
     function appendLoadingIndicator() {
@@ -445,6 +687,209 @@
       if (loading) loading.remove();
     }
 
+    // ----------------------------------------------------------------
+    // Question Flow & Widget Rendering (Phase 1)
+    // ----------------------------------------------------------------
+    async function initChatFlow() {
+      const sessionId = getSessionId();
+
+      try {
+        // 1. Fetch questions and session onboarding status
+        const [questionsRes, statusRes] = await Promise.all([
+          fetch('/api/onboarding/questions'),
+          fetch(`/api/onboarding/status/${sessionId}`)
+        ]);
+
+        questionsList = await questionsRes.json();
+        const status = await statusRes.json();
+
+        // If no questions exist in the DB or all are already completed
+        if (!questionsList || questionsList.length === 0 || status.completed) {
+          activateRagMode();
+          appendMessage("Hello! I am your AI assistant powered by Agentic RAG. Ask me anything about Web Prism Dynamics or general AI topics!", 'bot');
+          return;
+        }
+
+        // Map of already answered question IDs
+        const answeredIds = new Set((status.answers || []).map(a => a.question_id));
+        
+        // Find first unanswered question
+        const firstUnansweredIndex = questionsList.findIndex(q => !answeredIds.has(q.id));
+
+        if (firstUnansweredIndex === -1) {
+          activateRagMode();
+          appendMessage("Welcome back! How can I assist you with Web Prism Dynamics today?", 'bot');
+          return;
+        }
+
+        // Questions are pending! Start Phase 1
+        isSurveyActive = true;
+        currentQuestionIndex = firstUnansweredIndex;
+        onboardingProgress.style.display = 'flex';
+        updateProgressBar();
+
+        appendMessage("👋 Welcome to Web Prism Dynamics! Before we begin, please answer a few quick questions to help us tailor your experience.", 'bot');
+        
+        // Present the current question
+        setTimeout(() => {
+          presentQuestion(questionsList[currentQuestionIndex]);
+        }, 300);
+
+      } catch (err) {
+        console.error("Failed to initialize flow:", err);
+        activateRagMode();
+        appendMessage("Hello! I am your AI assistant powered by Agentic RAG. How can I help you today?", 'bot');
+      }
+    }
+
+    function updateProgressBar() {
+      const total = questionsList.length;
+      const current = currentQuestionIndex + 1;
+      progressText.textContent = `Question ${Math.min(current, total)} of ${total}`;
+      const percentage = Math.round(((current - 1) / total) * 100);
+      progressFill.style.width = `${percentage}%`;
+    }
+
+    function presentQuestion(q) {
+      if (!q) return;
+
+      const options = Array.isArray(q.options) 
+        ? q.options 
+        : (typeof q.options === 'string' ? JSON.parse(q.options) : []);
+
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'message bot';
+
+      const avatarDiv = document.createElement('div');
+      avatarDiv.className = 'avatar bot';
+      avatarDiv.innerHTML = '🤖';
+
+      const bubbleContainer = document.createElement('div');
+      bubbleContainer.className = 'bubble-container';
+
+      const widgetDiv = document.createElement('div');
+      widgetDiv.className = 'question-widget';
+      widgetDiv.id = `qWidget_${q.id}`;
+
+      const badge = document.createElement('div');
+      badge.className = 'question-badge';
+      badge.innerHTML = `<span>Question ${currentQuestionIndex + 1}</span>`;
+
+      const title = document.createElement('div');
+      title.className = 'question-title';
+      title.textContent = q.question_text;
+
+      const optionsGrid = document.createElement('div');
+      optionsGrid.className = 'options-grid';
+
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.type = 'button';
+        btn.innerHTML = `
+          <span>${opt}</span>
+          <div class="option-indicator"></div>
+        `;
+        btn.onclick = () => handleAnswerSelected(q, opt, btn, widgetDiv);
+        optionsGrid.appendChild(btn);
+      });
+
+      widgetDiv.appendChild(badge);
+      widgetDiv.appendChild(title);
+      widgetDiv.appendChild(optionsGrid);
+
+      bubbleContainer.appendChild(widgetDiv);
+      msgDiv.appendChild(avatarDiv);
+      msgDiv.appendChild(bubbleContainer);
+
+      messagesArea.appendChild(msgDiv);
+      messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
+
+    async function handleAnswerSelected(question, selectedOption, btn, widgetDiv) {
+      // Disable buttons in widget
+      const allBtns = widgetDiv.querySelectorAll('.option-btn');
+      allBtns.forEach(b => {
+        b.disabled = true;
+        b.style.pointerEvents = 'none';
+      });
+      btn.classList.add('selected');
+
+      // 1. Render user message bubble
+      appendMessage(selectedOption, 'user');
+
+      // 2. Persist answer to backend
+      try {
+        await fetch('/api/onboarding/answers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: getSessionId(),
+            questionId: question.id,
+            selectedOption: selectedOption
+          })
+        });
+      } catch (err) {
+        console.error("Error saving survey answer:", err);
+      }
+
+      // Move to next question or complete
+      currentQuestionIndex++;
+      const total = questionsList.length;
+      progressFill.style.width = `${Math.round((currentQuestionIndex / total) * 100)}%`;
+
+      if (currentQuestionIndex < total) {
+        progressText.textContent = `Question ${currentQuestionIndex + 1} of ${total}`;
+        setTimeout(() => {
+          presentQuestion(questionsList[currentQuestionIndex]);
+        }, 500);
+      } else {
+        // Survey finished!
+        setTimeout(() => {
+          completeOnboardingFlow();
+        }, 600);
+      }
+    }
+
+    function completeOnboardingFlow() {
+      isSurveyActive = false;
+      onboardingProgress.style.display = 'none';
+
+      // Completion card
+      const compDiv = document.createElement('div');
+      compDiv.className = 'message bot';
+      compDiv.innerHTML = `
+        <div class="avatar bot">✨</div>
+        <div class="bubble-container">
+          <div class="completion-card">
+            <div class="completion-icon">✅</div>
+            <div>
+              <div style="font-weight: 700; font-size: 0.95rem; color: #ffffff; margin-bottom: 2px;">Preferences saved!</div>
+              <div style="font-size: 0.84rem; color: #cbd5e1;">Your profile has been configured. You can now chat directly with our Agentic RAG assistant.</div>
+            </div>
+          </div>
+        </div>
+      `;
+      messagesArea.appendChild(compDiv);
+      messagesArea.scrollTop = messagesArea.scrollHeight;
+
+      activateRagMode();
+    }
+
+    function activateRagMode() {
+      isSurveyActive = false;
+      modeBadge.classList.add('rag-active');
+      modeText.textContent = '2. RAG Chat Active';
+      quickChips.style.display = 'flex';
+      input.disabled = false;
+      sendBtn.disabled = false;
+      input.placeholder = "Ask a question about Web Prism Dynamics or anything else...";
+      input.focus();
+    }
+
+    // ----------------------------------------------------------------
+    // RAG AI Chat Message Flow (Phase 2)
+    // ----------------------------------------------------------------
     async function sendMessage(text) {
       if (!text.trim()) return;
 
@@ -483,24 +928,8 @@
       }
     }
 
-    async function loadHistory() {
-      try {
-        const sessionId = getSessionId();
-        const response = await fetch(`/history?sessionId=${encodeURIComponent(sessionId)}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.messages && data.messages.length > 0) {
-            data.messages.forEach(msg => {
-              appendMessage(msg.content, msg.role === 'assistant' ? 'bot' : 'user');
-            });
-          }
-        }
-      } catch (err) {
-        console.error("Could not load previous chat history:", err);
-      }
-    }
-
     function askPreset(prompt) {
+      if (isSurveyActive) return;
       input.value = prompt;
       form.dispatchEvent(new Event('submit'));
     }
@@ -511,8 +940,8 @@
       if (val) sendMessage(val);
     });
 
-    // Load conversation history on startup if present
-    loadHistory();
+    // Start flow on load
+    initChatFlow();
   </script>
 </body>
 </html>

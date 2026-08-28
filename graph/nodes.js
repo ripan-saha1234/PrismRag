@@ -50,7 +50,7 @@ export async function callModel(state) {
   const context = formatRetrievedContext(hits);
 
   const response = await llmWithTools.invoke([
-    new SystemMessage(buildSystemPrompt(context)),
+    new SystemMessage(buildSystemPrompt(context, state.userContext || "")),
     ...state.messages,
   ]);
 

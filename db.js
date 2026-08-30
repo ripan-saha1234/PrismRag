@@ -48,6 +48,26 @@ export async function initDb() {
     );
 
     CREATE INDEX IF NOT EXISTS idx_session_survey_answers_session_id ON session_survey_answers(session_id);
+
+    CREATE TABLE IF NOT EXISTS session_insights (
+      session_id UUID PRIMARY KEY REFERENCES chat_sessions(id) ON DELETE CASCADE,
+      sentiment VARCHAR(20) NOT NULL DEFAULT 'neutral',
+      sentiment_score NUMERIC(4, 2) DEFAULT 0,
+      lead_score INT DEFAULT 0,
+      icp_fit_score INT DEFAULT 0,
+      lead_type VARCHAR(20) DEFAULT 'cold',
+      intent VARCHAR(120),
+      topics JSONB DEFAULT '[]'::jsonb,
+      engagement_level VARCHAR(20) DEFAULT 'low',
+      summary TEXT,
+      icp_reasoning TEXT,
+      profile_signals JSONB DEFAULT '[]'::jsonb,
+      chat_signals JSONB DEFAULT '[]'::jsonb,
+      recommended_action TEXT,
+      ideal_customer_verdict TEXT,
+      raw_analysis JSONB,
+      analyzed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
   `;
 
   // Auto-migration to handle any existing tables created with older column schemas

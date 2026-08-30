@@ -1,16 +1,47 @@
 import express from "express";
 import cors from "cors";
+import multer from "multer";
 import "./graph/config.js";
 import { runAgent } from "./graph/agent.js";
-import { ingestKnowledgePdfs } from "./knowledge/vectorstore.js";
+import {
+  ingestKnowledgePdfs,
+  ingestUploadedPdf,
+  listKnowledgeDocuments,
+  deleteKnowledgeDocument,
+  getCollectionPointCount,
+} from "./knowledge/vectorstore.js";
 import { pool, initDb } from "./db.js";
 
 const app = express();
 const port = 3000;
 
-app.use(cors());
+const corsOptions = {
+  origin(origin, callback) {
+    // Allow same-origin, server-to-server, and local dev frontends (Live Server, etc.)
+    callback(null, true);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+};
+
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 app.use(express.json());
 app.use(express.static("public"));
+
+const pdfUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const isPdf =
+      file.mimetype === "application/pdf" ||
+      file.originalname.toLowerCase().endsWith(".pdf");
+
+    if (isPdf) cb(null, true);
+    else cb(new Error("Only PDF files are allowed."));
+  },
+});
 
 // Helper: Format user survey answers into a concise string for LLM context
 async function getUserSurveyContext(sessionId) {
@@ -523,6 +554,73 @@ app.delete("/api/admin/sessions/:sessionId", async (req, res) => {
     console.error("Delete session error:", error);
     return res.status(500).json({ error: "Failed to delete session." });
   }
+});
+
+// ----------------------------------------------------
+// 5. Knowledge Base / Document Ingestion (Admin)
+// ----------------------------------------------------
+
+app.get("/api/admin/documents", async (_req, res) => {
+  try {
+    const [documents, totalChunks] = await Promise.all([
+      listKnowledgeDocuments(),
+      getCollectionPointCount(),
+    ]);
+
+    return res.status(200).json({
+      documents,
+      totalDocuments: documents.length,
+      totalChunks,
+    });
+  } catch (error) {
+    console.error("List documents error:", error);
+    return res.status(500).json({ error: error.message ?? "Failed to list documents." });
+  }
+});
+
+app.post("/api/admin/documents/upload", pdfUpload.single("file"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "PDF file is required." });
+    }
+
+    const result = await ingestUploadedPdf(req.file.buffer, req.file.originalname);
+    return res.status(201).json({
+      message: "Document uploaded and indexed successfully.",
+      ...result,
+    });
+  } catch (error) {
+    console.error("Document upload error:", error);
+    return res.status(500).json({ error: error.message ?? "Failed to upload document." });
+  }
+});
+
+app.delete("/api/admin/documents", async (req, res) => {
+  try {
+    const source = req.query.source?.trim();
+    if (!source) {
+      return res.status(400).json({ error: "source query parameter is required." });
+    }
+
+    await deleteKnowledgeDocument(source);
+    return res.status(200).json({
+      message: "Document removed from vector database.",
+      source,
+    });
+  } catch (error) {
+    console.error("Delete document error:", error);
+    return res.status(500).json({ error: error.message ?? "Failed to delete document." });
+  }
+});
+
+app.use((error, _req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    return res.status(400).json({ error: error.message });
+  }
+  if (error?.message === "Only PDF files are allowed.") {
+    return res.status(400).json({ error: error.message });
+  }
+  return next(error);
 });
 
 app.listen(port, () => {

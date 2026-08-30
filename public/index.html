@@ -607,6 +607,12 @@
   </div>
 
   <script>
+    const API_BASE =
+      window.location.protocol === "file:" ||
+      (window.location.port && window.location.port !== "3000")
+        ? "http://localhost:3000"
+        : "";
+
     const form = document.getElementById('chatForm');
     const input = document.getElementById('userInput');
     const messagesArea = document.getElementById('messagesArea');
@@ -696,8 +702,8 @@
       try {
         // 1. Fetch questions and session onboarding status
         const [questionsRes, statusRes] = await Promise.all([
-          fetch('/api/onboarding/questions'),
-          fetch(`/api/onboarding/status/${sessionId}`)
+          fetch(`${API_BASE}/api/onboarding/questions`),
+          fetch(`${API_BASE}/api/onboarding/status/${sessionId}`)
         ]);
 
         questionsList = await questionsRes.json();
@@ -820,7 +826,7 @@
 
       // 2. Persist answer to backend
       try {
-        await fetch('/api/onboarding/answers', {
+        await fetch(`${API_BASE}/api/onboarding/answers`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -901,7 +907,7 @@
       appendLoadingIndicator();
 
       try {
-        const response = await fetch('/ai', {
+        const response = await fetch(`${API_BASE}/ai`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

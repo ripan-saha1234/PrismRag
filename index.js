@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import "./graph/config.js";
 import { runAgent } from "./graph/agent.js";
-import { ingestCompanyPdf } from "./knowledge/vectorstore.js";
+import { ingestKnowledgePdfs } from "./knowledge/vectorstore.js";
 
 const app = express();
 const port = 3000;
@@ -37,7 +37,7 @@ app.get("/", (req, res) => {
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
-  ingestCompanyPdf().catch((error) => {
-    console.error("Failed to ingest PDF:", error);
+  ingestKnowledgePdfs().catch((error) => {
+    console.error("Failed to ingest PDFs:", error);
   });
 });

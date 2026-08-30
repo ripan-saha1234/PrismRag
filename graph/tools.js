@@ -19,7 +19,7 @@ export const tavilySearch = tool(
   {
     name: "tavily_search",
     description:
-      "Search the public web for current events or general information that is NOT about Web Prism Dynamics LLP. Company questions are answered from the vector database, not this tool.",
+      "Search the public web for current events or general information that is NOT in the company/knowledge PDFs. Do not use this when the vector database already has the answer.",
     schema: z.object({
       query: z.string().describe("The web search query"),
     }),

@@ -10,4 +10,8 @@ export const AgentState = Annotation.Root({
     reducer: (_, next) => next ?? "",
     default: () => "",
   }),
+  userContext: Annotation({
+    reducer: (_, next) => next ?? "",
+    default: () => "",
+  }),
 });

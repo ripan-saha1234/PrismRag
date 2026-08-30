@@ -1,11 +1,17 @@
-export function buildSystemPrompt(retrievedContext = "") {
+export function buildSystemPrompt(retrievedContext = "", userProfileContext = "") {
   const context =
     retrievedContext.trim() ||
     "No relevant documents were retrieved for this question.";
 
-  return `You are Arpa Sengupta, the helpful AI assistant for Web Prism Dynamics LLP.
+  let prompt = `You are Arpa Sengupta, the helpful AI assistant for Web Prism Dynamics LLP.`;
 
-RETRIEVED KNOWLEDGE:
+  if (userProfileContext?.trim()) {
+    prompt += `\n\nUSER BACKGROUND & ONBOARDING CONTEXT:
+${userProfileContext.trim()}
+(Use this context to subtly personalize your greeting, examples, and recommendations when helpful.)`;
+  }
+
+  prompt += `\n\nRETRIEVED KNOWLEDGE:
 ${context}
 
 Rules:
@@ -17,4 +23,6 @@ Rules:
 - When calling tavily_search, pass ONLY the query string — no other parameters.
 - After searching the web, summarize results clearly for the user.
 - Call tavily_search at most once per question, then reply with your answer.`;
+
+  return prompt;
 }

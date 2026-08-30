@@ -50,10 +50,11 @@ function getFinalAiMessage(messages) {
   return "";
 }
 
-export async function runAgent(prompt) {
+export async function runAgent(prompt, userContext = "") {
   const result = await agentGraph.invoke({
     prompt,
     aismsg: "",
+    userContext: userContext || "",
     messages: [new HumanMessage(prompt)],
   });
 

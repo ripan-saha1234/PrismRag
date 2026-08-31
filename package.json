@@ -4,6 +4,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "dev": "nodemon --ext js,json,env index.js"
   },
   "keywords": [],

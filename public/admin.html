@@ -300,6 +300,59 @@
       font-size: 14px;
     }
 
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .filter-select {
+      flex: 1;
+      min-width: 120px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 7px 10px;
+      color: #fff;
+      font-size: 0.8rem;
+      outline: none;
+    }
+
+    .filter-select:focus {
+      border-color: var(--primary);
+    }
+
+    .session-lead-pill {
+      font-size: 0.68rem;
+      padding: 2px 7px;
+      border-radius: 10px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .session-lead-pill.hot { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+    .session-lead-pill.warm { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+    .session-lead-pill.cold { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+    .session-lead-pill.pending { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; }
+
+    .insights-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px 12px;
+    }
+
+    .insights-pagination {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 16px 16px;
+      justify-content: flex-end;
+    }
+
     .sessions-list {
       flex: 1;
       overflow-y: auto;
@@ -712,6 +765,197 @@
       border-radius: 10px;
       transition: width 0.5s ease;
     }
+
+    /* Document Ingestion */
+    .documents-layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+    }
+
+    .upload-zone {
+      border: 2px dashed rgba(99, 102, 241, 0.35);
+      border-radius: 16px;
+      padding: 28px 20px;
+      text-align: center;
+      background: rgba(99, 102, 241, 0.06);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.dragover {
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.12);
+    }
+
+    .upload-zone-icon {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    .upload-zone h3 {
+      font-size: 1rem;
+      margin-bottom: 6px;
+    }
+
+    .upload-zone p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .upload-status {
+      margin-top: 14px;
+      font-size: 0.82rem;
+      min-height: 20px;
+    }
+
+    .documents-table-wrap {
+      overflow: auto;
+    }
+
+    .documents-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+    }
+
+    .documents-table th,
+    .documents-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--card-border);
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    .documents-table th {
+      color: var(--text-muted);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 600;
+    }
+
+    .origin-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 600;
+    }
+
+    .origin-badge.upload {
+      background: rgba(6, 182, 212, 0.15);
+      color: #67e8f9;
+      border: 1px solid rgba(6, 182, 212, 0.25);
+    }
+
+    .origin-badge.folder {
+      background: rgba(34, 197, 94, 0.12);
+      color: #86efac;
+      border: 1px solid rgba(34, 197, 94, 0.25);
+    }
+
+    /* AI Insights */
+    .insights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .insight-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 18px;
+    }
+
+    .insight-card h4 {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    .insight-card .value {
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+
+    .lead-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .lead-badge.hot { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+    .lead-badge.warm { background: rgba(245, 158, 11, 0.15); color: #fcd34d; }
+    .lead-badge.cold { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
+
+    .sentiment-badge.positive { color: #86efac; }
+    .sentiment-badge.neutral { color: #cbd5e1; }
+    .sentiment-badge.negative { color: #fca5a5; }
+
+    .insights-report {
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+    .insights-report h3 {
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+    }
+
+    .insights-metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .metric-box {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .metric-box .label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .metric-box .num {
+      font-size: 1.2rem;
+      font-weight: 800;
+    }
+
+    .signal-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .signal-item {
+      font-size: 0.82rem;
+      color: #cbd5e1;
+      padding-left: 12px;
+      border-left: 2px solid rgba(99, 102, 241, 0.4);
+    }
   </style>
 </head>
 <body>
@@ -734,6 +978,12 @@
       </button>
       <button class="tab-btn" onclick="switchTab('poll-results')">
         📊 Survey Analytics
+      </button>
+      <button class="tab-btn" onclick="switchTab('documents')">
+        📄 Document Ingestion
+      </button>
+      <button class="tab-btn" onclick="switchTab('insights')">
+        🧠 AI Insights
       </button>
     </div>
 
@@ -796,6 +1046,33 @@
             <div class="search-box">
               <span class="search-icon">🔍</span>
               <input type="text" id="searchInput" class="search-input" placeholder="Search UUID or message text..." oninput="debounceSearch()" />
+            </div>
+            <div class="filter-row">
+              <select id="sessionFilterType" class="filter-select" onchange="applySessionFilters()">
+                <option value="all">All sessions</option>
+                <option value="with_messages">With messages</option>
+                <option value="with_survey">With survey answers</option>
+                <option value="analyzed">AI analyzed</option>
+                <option value="pending_analysis">Pending analysis</option>
+              </select>
+              <select id="sessionLeadFilter" class="filter-select" onchange="applySessionFilters()">
+                <option value="">All lead types</option>
+                <option value="hot">Hot</option>
+                <option value="warm">Warm</option>
+                <option value="cold">Cold</option>
+              </select>
+              <select id="sessionSentimentFilter" class="filter-select" onchange="applySessionFilters()">
+                <option value="">All sentiments</option>
+                <option value="positive">Positive</option>
+                <option value="neutral">Neutral</option>
+                <option value="negative">Negative</option>
+              </select>
+              <select id="sessionPageSize" class="filter-select" style="max-width: 110px;" onchange="applySessionFilters()">
+                <option value="15">15 / page</option>
+                <option value="25" selected>25 / page</option>
+                <option value="50">50 / page</option>
+                <option value="100">100 / page</option>
+              </select>
             </div>
           </div>
 
@@ -901,25 +1178,206 @@
       </div>
     </div>
 
+    <!-- TAB 4: Document Ingestion -->
+    <div class="tab-pane" id="pane-documents">
+      <div class="stats-grid" style="margin-bottom: 20px;">
+        <div class="stat-card">
+          <div class="stat-icon">📚</div>
+          <div class="stat-info">
+            <h3>Indexed Documents</h3>
+            <div class="stat-value" id="docStatCount">-</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🧩</div>
+          <div class="stat-info">
+            <h3>Vector Chunks</h3>
+            <div class="stat-value" id="docStatChunks">-</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="documents-layout">
+        <div class="content-card" style="padding: 24px;">
+          <div class="panel-title" style="margin-bottom: 16px;">
+            <span>Upload PDF to Vector DB</span>
+          </div>
+
+          <div class="upload-zone" id="uploadZone" onclick="document.getElementById('documentFileInput').click()">
+            <div class="upload-zone-icon">📤</div>
+            <h3>Drop PDF here or click to browse</h3>
+            <p>Files are chunked, embedded, and stored in Qdrant immediately.<br>Re-uploading the same filename replaces the old vectors.</p>
+            <input type="file" id="documentFileInput" accept="application/pdf,.pdf" hidden />
+          </div>
+
+          <div class="upload-status" id="uploadStatus"></div>
+        </div>
+
+        <div class="content-card">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span>Indexed Knowledge Documents</span>
+            </div>
+          </div>
+          <div class="documents-table-wrap">
+            <table class="documents-table">
+              <thead>
+                <tr>
+                  <th>Document</th>
+                  <th>Source</th>
+                  <th>Chunks</th>
+                  <th>Origin</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="documentsTableBody">
+                <tr>
+                  <td colspan="5" class="empty-state">Loading documents...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: AI Insights -->
+    <div class="tab-pane" id="pane-insights">
+      <div class="insights-grid" id="insightsOverviewGrid">
+        <div class="insight-card"><h4>Analyzed Sessions</h4><div class="value" id="insightAnalyzed">-</div></div>
+        <div class="insight-card"><h4>Avg Lead Score</h4><div class="value" id="insightAvgLead">-</div></div>
+        <div class="insight-card"><h4>Avg ICP Fit</h4><div class="value" id="insightAvgIcp">-</div></div>
+        <div class="insight-card"><h4>Hot Leads</h4><div class="value" id="insightHot">-</div></div>
+        <div class="insight-card"><h4>Warm Leads</h4><div class="value" id="insightWarm">-</div></div>
+        <div class="insight-card"><h4>Positive Sentiment</h4><div class="value" id="insightPositive">-</div></div>
+      </div>
+
+      <div class="content-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span>Lead Intelligence Report</span>
+            <button class="btn btn-primary" onclick="loadInsightsOverview()">🔄 Refresh</button>
+          </div>
+        </div>
+        <div class="insights-toolbar">
+          <div class="filter-row" style="flex: 1;">
+            <select id="insightsFilterType" class="filter-select" onchange="applyInsightsFilters()">
+              <option value="all">All sessions</option>
+              <option value="with_messages">With messages</option>
+              <option value="analyzed">AI analyzed</option>
+              <option value="pending_analysis">Pending analysis</option>
+            </select>
+            <select id="insightsLeadFilter" class="filter-select" onchange="applyInsightsFilters()">
+              <option value="">All lead types</option>
+              <option value="hot">Hot</option>
+              <option value="warm">Warm</option>
+              <option value="cold">Cold</option>
+            </select>
+            <select id="insightsSentimentFilter" class="filter-select" onchange="applyInsightsFilters()">
+              <option value="">All sentiments</option>
+              <option value="positive">Positive</option>
+              <option value="neutral">Neutral</option>
+              <option value="negative">Negative</option>
+            </select>
+            <input type="text" id="insightsSearchInput" class="search-input" style="padding-left: 12px; min-width: 200px;" placeholder="Search session or message..." oninput="debounceInsightsSearch()" />
+          </div>
+          <span id="insightsTotalBadge" style="font-size: 0.8rem; color: var(--text-muted);"></span>
+        </div>
+        <div class="documents-table-wrap" style="padding: 0 16px 16px;">
+          <table class="documents-table">
+            <thead>
+              <tr>
+                <th>Session</th>
+                <th>Lead Score</th>
+                <th>ICP Fit</th>
+                <th>Sentiment</th>
+                <th>Lead Type</th>
+                <th>Intent</th>
+                <th>Verdict</th>
+                <th>Analyzed</th>
+              </tr>
+            </thead>
+            <tbody id="insightsTableBody">
+              <tr><td colspan="8" class="empty-state">Loading insights...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="insights-pagination">
+          <button class="pagination-btn" id="insightsPrevBtn" onclick="changeInsightsPage(-1)" disabled>← Prev</button>
+          <span id="insightsPageIndicator" style="font-size: 0.8rem; color: var(--text-muted);">Page 1</span>
+          <button class="pagination-btn" id="insightsNextBtn" onclick="changeInsightsPage(1)" disabled>Next →</button>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <script>
-    const API_BASE = (window.location.port === '3000' || window.location.hostname === '') ? '' : 'http://localhost:3000';
+    const API_BASE =
+      window.location.protocol === "file:" ||
+      (window.location.port && window.location.port !== "3000")
+        ? "http://localhost:3000"
+        : "";
 
     let currentTab = 'analytics';
     let currentPage = 1;
+    let insightsPage = 1;
     let currentSessionId = null;
     let searchDebounceTimeout = null;
+    let insightsSearchDebounceTimeout = null;
     let questionsCache = [];
+
+    function getSessionFilterParams(page = currentPage) {
+      const search = document.getElementById('searchInput')?.value.trim() || '';
+      const filter = document.getElementById('sessionFilterType')?.value || 'all';
+      const leadType = document.getElementById('sessionLeadFilter')?.value || '';
+      const sentiment = document.getElementById('sessionSentimentFilter')?.value || '';
+      const limit = document.getElementById('sessionPageSize')?.value || '25';
+
+      const params = new URLSearchParams({
+        page: String(page),
+        limit,
+        search,
+        filter,
+      });
+      if (leadType) params.set('lead_type', leadType);
+      if (sentiment) params.set('sentiment', sentiment);
+      return params;
+    }
+
+    function getInsightsFilterParams(page = insightsPage) {
+      const search = document.getElementById('insightsSearchInput')?.value.trim() || '';
+      const filter = document.getElementById('insightsFilterType')?.value || 'all';
+      const leadType = document.getElementById('insightsLeadFilter')?.value || '';
+      const sentiment = document.getElementById('insightsSentimentFilter')?.value || '';
+
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: '25',
+        search,
+        filter,
+      });
+      if (leadType) params.set('lead_type', leadType);
+      if (sentiment) params.set('sentiment', sentiment);
+      return params;
+    }
+
+    function applySessionFilters() {
+      currentPage = 1;
+      loadSessions(1);
+    }
+
+    function applyInsightsFilters() {
+      insightsPage = 1;
+      loadInsightsSessions(1);
+    }
 
     function switchTab(tabId) {
       currentTab = tabId;
+      const tabOrder = ['analytics', 'questions', 'poll-results', 'documents', 'insights'];
+
       document.querySelectorAll('.tab-btn').forEach((btn, index) => {
-        btn.classList.toggle('active', 
-          (tabId === 'analytics' && index === 0) || 
-          (tabId === 'questions' && index === 1) || 
-          (tabId === 'poll-results' && index === 2)
-        );
+        btn.classList.toggle('active', tabOrder[index] === tabId);
       });
 
       document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
@@ -937,6 +1395,10 @@
         loadQuestions();
       } else if (currentTab === 'poll-results') {
         loadSurveyAnalytics();
+      } else if (currentTab === 'documents') {
+        loadDocuments();
+      } else if (currentTab === 'insights') {
+        loadInsightsOverview();
       }
     }
 
@@ -958,11 +1420,11 @@
 
     async function loadSessions(page = 1) {
       currentPage = page;
-      const search = document.getElementById('searchInput').value.trim();
       const listContainer = document.getElementById('sessionsList');
 
       try {
-        const res = await fetch(`${API_BASE}/api/admin/sessions?page=${page}&limit=15&search=${encodeURIComponent(search)}`);
+        const params = getSessionFilterParams(page);
+        const res = await fetch(`${API_BASE}/api/admin/sessions?${params.toString()}`);
         if (!res.ok) throw new Error("Failed to load sessions");
 
         const responseData = await res.json();
@@ -975,7 +1437,7 @@
         document.getElementById('nextPageBtn').disabled = !hasNextPage;
 
         if (sessions.length === 0) {
-          listContainer.innerHTML = `<div class="empty-state">No sessions found.</div>`;
+          listContainer.innerHTML = `<div class="empty-state">No sessions match your filters.</div>`;
           return;
         }
 
@@ -983,14 +1445,20 @@
           const isActive = s.id === currentSessionId ? 'active' : '';
           const snippet = s.last_message ? (s.last_message_role === 'user' ? '👤 ' : '🤖 ') + s.last_message : 'No messages yet';
           const time = new Date(s.last_active_at).toLocaleString();
+          const leadPill = s.lead_type
+            ? `<span class="session-lead-pill ${s.lead_type}">${s.lead_type}</span>`
+            : (s.message_count > 0 ? `<span class="session-lead-pill pending">pending</span>` : '');
 
           return `
             <div class="session-item ${isActive}" onclick="selectSession('${s.id}')" id="session-item-${s.id}">
               <div class="session-item-top">
                 <span class="session-id">${s.id.substring(0, 8)}...${s.id.substring(s.id.length - 4)}</span>
-                <span class="session-badge">${s.message_count} msgs</span>
+                <span style="display:flex; gap:6px; align-items:center;">
+                  ${leadPill}
+                  <span class="session-badge">${s.message_count} msgs</span>
+                </span>
               </div>
-              <div class="session-snippet" title="${s.last_message || ''}">${escapeHtml(snippet)}</div>
+              <div class="session-snippet" title="${escapeHtml(s.last_message || '')}">${escapeHtml(snippet)}</div>
               <div class="session-time">Active: ${time} ${s.survey_answers_count ? `&bull; 📋 ${s.survey_answers_count} answers` : ''}</div>
             </div>
           `;
@@ -1023,7 +1491,7 @@
         const res = await fetch(`${API_BASE}/api/admin/sessions/${sessionId}`);
         if (!res.ok) throw new Error("Could not retrieve session transcript");
 
-        const { session, messages, surveyAnswers } = await res.json();
+        const { session, messages, surveyAnswers, insights } = await res.json();
 
         metaEl.textContent = `Created: ${new Date(session.created_at).toLocaleString()} | Total Messages: ${messages.length}`;
 
@@ -1044,12 +1512,14 @@
           `;
         }
 
+        const insightsHtml = renderInsightsCard(insights, sessionId);
+
         if (!messages || messages.length === 0) {
-          messagesContainer.innerHTML = surveyHeaderHtml + `<div class="empty-state" style="padding-top: 20px;">No conversation messages yet.</div>`;
+          messagesContainer.innerHTML = surveyHeaderHtml + insightsHtml + `<div class="empty-state" style="padding-top: 20px;">No conversation messages yet.</div>`;
           return;
         }
 
-        messagesContainer.innerHTML = surveyHeaderHtml + messages.map(m => {
+        messagesContainer.innerHTML = surveyHeaderHtml + insightsHtml + messages.map(m => {
           const isUser = m.role === 'user';
           const time = new Date(m.created_at).toLocaleTimeString();
           const metadataHtml = m.metadata && Object.keys(m.metadata).length > 0 ? `
@@ -1103,8 +1573,21 @@
     function debounceSearch() {
       clearTimeout(searchDebounceTimeout);
       searchDebounceTimeout = setTimeout(() => {
+        currentPage = 1;
         loadSessions(1);
       }, 300);
+    }
+
+    function debounceInsightsSearch() {
+      clearTimeout(insightsSearchDebounceTimeout);
+      insightsSearchDebounceTimeout = setTimeout(() => {
+        insightsPage = 1;
+        loadInsightsSessions(1);
+      }, 300);
+    }
+
+    function changeInsightsPage(delta) {
+      loadInsightsSessions(insightsPage + delta);
     }
 
     function initOptionInputs(defaultOptions = ["Option A", "Option B"]) {
@@ -1323,6 +1806,149 @@
       }
     }
 
+    function parseJsonArray(value) {
+      if (Array.isArray(value)) return value;
+      if (!value) return [];
+      try {
+        return JSON.parse(value);
+      } catch {
+        return [];
+      }
+    }
+
+    function renderInsightsCard(insights, sessionId) {
+      if (!insights) {
+        return `
+          <div class="insights-report">
+            <h3>🧠 AI Sentiment & ICP Report</h3>
+            <p style="color: var(--text-muted); font-size: 0.86rem; margin-bottom: 12px;">
+              No analysis yet. It runs automatically after chat messages, or you can run it now.
+            </p>
+            <button class="btn btn-primary" onclick="analyzeCurrentSession('${sessionId}')">Run AI Analysis</button>
+          </div>
+        `;
+      }
+
+      const topics = parseJsonArray(insights.topics);
+      const profileSignals = parseJsonArray(insights.profile_signals);
+      const chatSignals = parseJsonArray(insights.chat_signals);
+
+      return `
+        <div class="insights-report">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px;">
+            <h3>🧠 AI Sentiment & ICP Report</h3>
+            <button class="btn" onclick="analyzeCurrentSession('${sessionId}')">Re-analyze</button>
+          </div>
+
+          <div class="insights-metrics">
+            <div class="metric-box"><div class="label">Lead Score</div><div class="num">${insights.lead_score}/100</div></div>
+            <div class="metric-box"><div class="label">ICP Fit</div><div class="num">${insights.icp_fit_score}/100</div></div>
+            <div class="metric-box"><div class="label">Sentiment</div><div class="num sentiment-badge ${insights.sentiment}">${insights.sentiment}</div></div>
+            <div class="metric-box"><div class="label">Lead Type</div><div class="num"><span class="lead-badge ${insights.lead_type}">${insights.lead_type}</span></div></div>
+          </div>
+
+          <p style="font-size:0.9rem; margin-bottom:10px;"><strong>Verdict:</strong> ${escapeHtml(insights.ideal_customer_verdict || '')}</p>
+          <p style="font-size:0.86rem; color:#cbd5e1; margin-bottom:10px;">${escapeHtml(insights.summary || '')}</p>
+          <p style="font-size:0.84rem; color:#a5b4fc; margin-bottom:10px;"><strong>ICP Reasoning:</strong> ${escapeHtml(insights.icp_reasoning || '')}</p>
+          <p style="font-size:0.84rem; color:#86efac; margin-bottom:10px;"><strong>Recommended Action:</strong> ${escapeHtml(insights.recommended_action || '')}</p>
+
+          ${topics.length ? `<div style="margin-bottom:10px;"><strong>Topics:</strong> ${topics.map(t => `<span class="pill">${escapeHtml(t)}</span>`).join(' ')}</div>` : ''}
+
+          ${profileSignals.length ? `<div><strong>Profile Signals</strong><div class="signal-list">${profileSignals.map(s => `<div class="signal-item">${escapeHtml(s)}</div>`).join('')}</div></div>` : ''}
+          ${chatSignals.length ? `<div style="margin-top:10px;"><strong>Chat Signals</strong><div class="signal-list">${chatSignals.map(s => `<div class="signal-item">${escapeHtml(s)}</div>`).join('')}</div></div>` : ''}
+
+          <div style="margin-top:10px; font-size:0.75rem; color:var(--text-muted);">
+            Analyzed: ${insights.analyzed_at ? new Date(insights.analyzed_at).toLocaleString() : 'N/A'}
+          </div>
+        </div>
+      `;
+    }
+
+    async function analyzeCurrentSession(sessionId) {
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/sessions/${sessionId}/insights/analyze`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Analysis failed');
+        selectSession(sessionId);
+        if (currentTab === 'insights') loadInsightsOverview();
+      } catch (err) {
+        alert(`Analysis failed: ${err.message}`);
+      }
+    }
+
+    async function loadInsightsOverview() {
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/insights/overview`);
+        if (!res.ok) throw new Error('Failed to load insights');
+
+        const data = await res.json();
+        const o = data.overview || {};
+
+        document.getElementById('insightAnalyzed').textContent = o.analyzed_sessions ?? 0;
+        document.getElementById('insightAvgLead').textContent = o.avg_lead_score ?? 0;
+        document.getElementById('insightAvgIcp').textContent = o.avg_icp_score ?? 0;
+        document.getElementById('insightHot').textContent = o.hot_leads ?? 0;
+        document.getElementById('insightWarm').textContent = o.warm_leads ?? 0;
+        document.getElementById('insightPositive').textContent = o.positive_sentiment ?? 0;
+      } catch (err) {
+        console.error('Failed to load insight stats:', err);
+      }
+
+      await loadInsightsSessions(insightsPage);
+    }
+
+    async function loadInsightsSessions(page = 1) {
+      insightsPage = page;
+      const tableBody = document.getElementById('insightsTableBody');
+
+      try {
+        const params = getInsightsFilterParams(page);
+        const res = await fetch(`${API_BASE}/api/admin/sessions?${params.toString()}`);
+        if (!res.ok) throw new Error('Failed to load sessions for insights');
+
+        const data = await res.json();
+        const rows = data.data || [];
+        const { total, totalPages, hasNextPage, hasPrevPage } = data.pagination;
+
+        document.getElementById('insightsTotalBadge').textContent = `${total} sessions`;
+        document.getElementById('insightsPageIndicator').textContent = `Page ${page} of ${totalPages || 1}`;
+        document.getElementById('insightsPrevBtn').disabled = !hasPrevPage;
+        document.getElementById('insightsNextBtn').disabled = !hasNextPage;
+
+        if (!rows.length) {
+          tableBody.innerHTML = `<tr><td colspan="8" class="empty-state">No sessions match your filters.</td></tr>`;
+          return;
+        }
+
+        tableBody.innerHTML = rows.map((row) => {
+          const analyzed = row.analyzed_at;
+          const leadScore = analyzed ? `${row.lead_score ?? 0}/100` : '—';
+          const icpScore = analyzed ? `${row.icp_fit_score ?? 0}/100` : '—';
+          const sentiment = analyzed
+            ? `<span class="sentiment-badge ${row.sentiment}">${row.sentiment}</span>`
+            : '<span class="session-lead-pill pending">pending</span>';
+          const leadType = analyzed
+            ? `<span class="lead-badge ${row.lead_type}">${row.lead_type}</span>`
+            : '—';
+
+          return `
+            <tr style="cursor:pointer;" onclick="switchTab('analytics'); selectSession('${row.id}')">
+              <td><code>${row.id.substring(0, 8)}...</code></td>
+              <td>${leadScore}</td>
+              <td>${icpScore}</td>
+              <td>${sentiment}</td>
+              <td>${leadType}</td>
+              <td>${escapeHtml(row.intent || (analyzed ? '' : 'Not analyzed'))}</td>
+              <td>${escapeHtml(row.ideal_customer_verdict || '')}</td>
+              <td>${analyzed ? new Date(row.analyzed_at).toLocaleString() : '—'}</td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        tableBody.innerHTML = `<tr><td colspan="8" class="empty-state" style="color:#ef4444;">Error: ${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
     function escapeHtml(str) {
       if (!str) return '';
       return String(str)
@@ -1333,10 +1959,129 @@
         .replace(/'/g, '&#039;');
     }
 
+    async function loadDocuments() {
+      const tableBody = document.getElementById('documentsTableBody');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/documents`);
+        if (!res.ok) throw new Error('Failed to load documents');
+
+        const data = await res.json();
+        const documents = data.documents || [];
+
+        document.getElementById('docStatCount').textContent = data.totalDocuments ?? documents.length;
+        document.getElementById('docStatChunks').textContent = data.totalChunks ?? 0;
+
+        if (!documents.length) {
+          tableBody.innerHTML = `<tr><td colspan="5" class="empty-state">No documents indexed yet. Upload a PDF to get started.</td></tr>`;
+          return;
+        }
+
+        tableBody.innerHTML = documents.map((doc) => `
+          <tr>
+            <td>${escapeHtml(doc.fileName)}</td>
+            <td><code>${escapeHtml(doc.source)}</code></td>
+            <td>${doc.chunks}</td>
+            <td>
+              <span class="origin-badge ${doc.origin === 'upload' ? 'upload' : 'folder'}">
+                ${doc.origin === 'upload' ? 'Admin Upload' : 'Knowledge Folder'}
+              </span>
+            </td>
+            <td>
+              <button class="btn btn-delete" onclick="deleteDocument('${encodeURIComponent(doc.source)}')">Delete</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tableBody.innerHTML = `<tr><td colspan="5" class="empty-state" style="color: #ef4444;">Error: ${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    async function uploadDocument(file) {
+      const statusEl = document.getElementById('uploadStatus');
+      if (!file) return;
+
+      if (!file.name.toLowerCase().endsWith('.pdf')) {
+        statusEl.textContent = 'Only PDF files are supported.';
+        statusEl.style.color = '#f87171';
+        return;
+      }
+
+      statusEl.textContent = `Uploading and indexing ${file.name}...`;
+      statusEl.style.color = '#cbd5e1';
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/documents/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Upload failed');
+
+        statusEl.textContent = `✅ ${data.fileName} indexed (${data.chunks} chunks).`;
+        statusEl.style.color = '#86efac';
+        document.getElementById('documentFileInput').value = '';
+        loadDocuments();
+      } catch (err) {
+        statusEl.textContent = `Error: ${err.message}`;
+        statusEl.style.color = '#f87171';
+      }
+    }
+
+    async function deleteDocument(encodedSource) {
+      const source = decodeURIComponent(encodedSource);
+      if (!confirm(`Remove "${source}" from the vector database?`)) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/documents?source=${encodeURIComponent(source)}`, {
+          method: 'DELETE',
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Delete failed');
+        loadDocuments();
+      } catch (err) {
+        alert(`Failed to delete document: ${err.message}`);
+      }
+    }
+
+    function initDocumentUpload() {
+      const uploadZone = document.getElementById('uploadZone');
+      const fileInput = document.getElementById('documentFileInput');
+
+      fileInput.addEventListener('change', (event) => {
+        const file = event.target.files?.[0];
+        if (file) uploadDocument(file);
+      });
+
+      ['dragenter', 'dragover'].forEach((eventName) => {
+        uploadZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          uploadZone.classList.add('dragover');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach((eventName) => {
+        uploadZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          uploadZone.classList.remove('dragover');
+        });
+      });
+
+      uploadZone.addEventListener('drop', (event) => {
+        const file = event.dataTransfer?.files?.[0];
+        if (file) uploadDocument(file);
+      });
+    }
+
     function loadDashboard() {
       loadStats();
       loadSessions(currentPage);
       initOptionInputs(["Option 1", "Option 2", "Option 3"]);
+      initDocumentUpload();
     }
 
     loadDashboard();

@@ -166,6 +166,26 @@
       border-color: rgba(255, 255, 255, 0.2);
     }
 
+    .new-chat-btn {
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--surface-border);
+      background: rgba(255, 255, 255, 0.04);
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .new-chat-btn:hover {
+      color: #ffffff;
+      background: rgba(99, 102, 241, 0.2);
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+
     /* Onboarding progress strip */
     .onboarding-progress-bar {
       background: rgba(14, 18, 28, 0.9);
@@ -557,6 +577,7 @@
           <span class="status-dot"></span>
           <span id="modeText">1. Survey Flow</span>
         </div>
+        <button type="button" class="new-chat-btn" onclick="startNewSession()" title="Start a new user session">+ New Chat</button>
         <a href="/admin.html" class="admin-link-btn" title="Open Admin Panel">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
           <span>Admin</span>
@@ -607,6 +628,12 @@
   </div>
 
   <script>
+    const API_BASE =
+      window.location.protocol === "file:" ||
+      (window.location.port && window.location.port !== "3000")
+        ? "http://localhost:3000"
+        : "";
+
     const form = document.getElementById('chatForm');
     const input = document.getElementById('userInput');
     const messagesArea = document.getElementById('messagesArea');
@@ -628,15 +655,30 @@
     let currentQuestionIndex = 0;
     let isSurveyActive = true;
 
+    function generateSessionId() {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+        const random = Math.random() * 16 | 0;
+        const value = char === 'x' ? random : (random & 0x3) | 0x8;
+        return value.toString(16);
+      });
+    }
+
     function getSessionId() {
       let sessionId = localStorage.getItem('prismrag_session_id');
       if (!sessionId) {
-        sessionId = typeof crypto.randomUUID === 'function' 
-          ? crypto.randomUUID() 
-          : 'sess_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+        sessionId = generateSessionId();
         localStorage.setItem('prismrag_session_id', sessionId);
       }
       return sessionId;
+    }
+
+    function startNewSession() {
+      if (!confirm('Start a new chat session? This creates a separate user in the admin panel.')) return;
+      localStorage.removeItem('prismrag_session_id');
+      window.location.reload();
     }
 
     function appendMessage(text, sender) {

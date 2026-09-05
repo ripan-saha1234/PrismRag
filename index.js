@@ -1,17 +1,53 @@
 import express from "express";
 import cors from "cors";
+import multer from "multer";
 import "./graph/config.js";
 import { runAgent } from "./graph/agent.js";
-import { ingestKnowledgePdfs } from "./knowledge/vectorstore.js";
+import {
+  ingestKnowledgePdfs,
+  ingestUploadedPdf,
+  listKnowledgeDocuments,
+  deleteKnowledgeDocument,
+  getCollectionPointCount,
+} from "./knowledge/vectorstore.js";
 import { pool, initDb } from "./db.js";
+import {
+  analyzeSessionInsights,
+  getSessionInsights,
+  getInsightsOverview,
+} from "./insights/analyzer.js";
 import { fetchPageContent, refreshTrackedPages } from "./knowledge/pageFetchers.js";
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
-app.use(cors());
+const corsOptions = {
+  origin(origin, callback) {
+    // Allow same-origin, server-to-server, and local dev frontends (Live Server, etc.)
+    callback(null, true);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+};
+
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 app.use(express.json());
 app.use(express.static("public"));
+
+const pdfUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const isPdf =
+      file.mimetype === "application/pdf" ||
+      file.originalname.toLowerCase().endsWith(".pdf");
+
+    if (isPdf) cb(null, true);
+    else cb(new Error("Only PDF files are allowed."));
+  },
+});
 
 // Helper: Format user survey answers into a concise string for LLM context
 async function getUserSurveyContext(sessionId) {
@@ -87,6 +123,10 @@ app.post("/ai", async (req, res) => {
       } catch (dbErr) {
         console.error("Failed to save bot response to DB:", dbErr);
       }
+
+      analyzeSessionInsights(pool, sessionId).catch((err) => {
+        console.error("Session insight analysis failed:", err.message);
+      });
     }
 
     return res.status(200).json(state);
@@ -384,68 +424,134 @@ app.get("/api/admin/stats", async (req, res) => {
   }
 });
 
+function buildAdminSessionFilters(query) {
+  const page = Math.max(1, parseInt(query.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(query.limit, 10) || 25));
+  const search = query.search?.trim() || "";
+  const filter = query.filter?.trim() || "all";
+  const leadType = query.lead_type?.trim() || "";
+  const sentiment = query.sentiment?.trim() || "";
+  const offset = (page - 1) * limit;
+
+  const params = [];
+  const conditions = [];
+
+  const addParam = (value) => {
+    params.push(value);
+    return `$${params.length}`;
+  };
+
+  if (search) {
+    const searchParam = addParam(`%${search}%`);
+    conditions.push(`(
+      s.id::text ILIKE ${searchParam}
+      OR EXISTS (
+        SELECT 1 FROM chat_messages cm
+        WHERE cm.session_id = s.id AND cm.content ILIKE ${searchParam}
+      )
+    )`);
+  }
+
+  if (filter === "with_messages") {
+    conditions.push(
+      `EXISTS (SELECT 1 FROM chat_messages cm WHERE cm.session_id = s.id)`
+    );
+  } else if (filter === "with_survey") {
+    conditions.push(
+      `EXISTS (SELECT 1 FROM session_survey_answers a WHERE a.session_id = s.id)`
+    );
+  } else if (filter === "analyzed") {
+    conditions.push(`si.session_id IS NOT NULL`);
+  } else if (filter === "pending_analysis") {
+    conditions.push(
+      `si.session_id IS NULL AND EXISTS (SELECT 1 FROM chat_messages cm WHERE cm.session_id = s.id)`
+    );
+  }
+
+  if (leadType) {
+    conditions.push(`si.lead_type = ${addParam(leadType)}`);
+  }
+
+  if (sentiment) {
+    conditions.push(`si.sentiment = ${addParam(sentiment)}`);
+  }
+
+  const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+  const baseFrom = `
+    FROM chat_sessions s
+    LEFT JOIN session_insights si ON si.session_id = s.id
+    ${whereClause}
+  `;
+
+  const selectQuery = `
+    SELECT
+      s.id,
+      s.created_at,
+      s.last_active_at,
+      (SELECT COUNT(*)::int FROM chat_messages m WHERE m.session_id = s.id) AS message_count,
+      (
+        SELECT m2.content
+        FROM chat_messages m2
+        WHERE m2.session_id = s.id
+        ORDER BY m2.created_at DESC
+        LIMIT 1
+      ) AS last_message,
+      (
+        SELECT m3.role
+        FROM chat_messages m3
+        WHERE m3.session_id = s.id
+        ORDER BY m3.created_at DESC
+        LIMIT 1
+      ) AS last_message_role,
+      (
+        SELECT COUNT(*)::int
+        FROM session_survey_answers a
+        WHERE a.session_id = s.id
+      ) AS survey_answers_count,
+      si.sentiment,
+      si.sentiment_score,
+      si.lead_score,
+      si.icp_fit_score,
+      si.lead_type,
+      si.intent,
+      si.ideal_customer_verdict,
+      si.analyzed_at
+    ${baseFrom}
+    ORDER BY s.last_active_at DESC
+    LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+  `;
+
+  const countQuery = `SELECT COUNT(*)::int AS total ${baseFrom}`;
+
+  return {
+    page,
+    limit,
+    offset,
+    params,
+    countQuery,
+    selectQuery,
+    selectParams: [...params, limit, offset],
+  };
+}
+
 app.get("/api/admin/sessions", async (req, res) => {
   try {
-    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
-    const search = req.query.search?.trim() || "";
-    const offset = (page - 1) * limit;
-
-    let countQuery = `SELECT COUNT(DISTINCT s.id)::int AS total FROM chat_sessions s`;
-    let sessionsQuery = `
-      SELECT 
-        s.id,
-        s.created_at,
-        s.last_active_at,
-        COUNT(m.id)::int AS message_count,
-        (
-          SELECT m2.content 
-          FROM chat_messages m2 
-          WHERE m2.session_id = s.id 
-          ORDER BY m2.created_at DESC 
-          LIMIT 1
-        ) AS last_message,
-        (
-          SELECT m3.role 
-          FROM chat_messages m3 
-          WHERE m3.session_id = s.id 
-          ORDER BY m3.created_at DESC 
-          LIMIT 1
-        ) AS last_message_role,
-        (
-          SELECT COUNT(*)::int
-          FROM session_survey_answers a
-          WHERE a.session_id = s.id
-        ) AS survey_answers_count
-      FROM chat_sessions s
-      LEFT JOIN chat_messages m ON s.id = m.session_id
-    `;
-
-    const queryParams = [];
-    const countParams = [];
-
-    if (search) {
-      countQuery += ` LEFT JOIN chat_messages cm ON s.id = cm.session_id WHERE s.id::text ILIKE $1 OR cm.content ILIKE $1`;
-      countParams.push(`%${search}%`);
-
-      sessionsQuery += ` WHERE s.id::text ILIKE $1 OR m.content ILIKE $1`;
-      queryParams.push(`%${search}%`);
-    }
-
-    sessionsQuery += `
-      GROUP BY s.id
-      ORDER BY s.last_active_at DESC
-      LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
-    `;
-    queryParams.push(limit, offset);
+    const {
+      page,
+      limit,
+      countQuery,
+      selectQuery,
+      selectParams,
+      params,
+    } = buildAdminSessionFilters(req.query);
 
     const [countResult, sessionsResult] = await Promise.all([
-      pool.query(countQuery, countParams),
-      pool.query(sessionsQuery, queryParams),
+      pool.query(countQuery, params),
+      pool.query(selectQuery, selectParams),
     ]);
 
     const total = countResult.rows[0]?.total || 0;
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.max(1, Math.ceil(total / limit));
 
     return res.status(200).json({
       data: sessionsResult.rows,
@@ -499,10 +605,13 @@ app.get("/api/admin/sessions/:sessionId", async (req, res) => {
       [sessionId]
     );
 
+    const insights = await getSessionInsights(pool, sessionId);
+
     return res.status(200).json({
       session: sessionRes.rows[0],
       messages: messagesRes.rows,
       surveyAnswers: surveyRes.rows,
+      insights,
     });
   } catch (error) {
     console.error("Admin session detail error:", error);
@@ -524,6 +633,112 @@ app.delete("/api/admin/sessions/:sessionId", async (req, res) => {
     console.error("Delete session error:", error);
     return res.status(500).json({ error: "Failed to delete session." });
   }
+});
+
+// ----------------------------------------------------
+// 5. AI Insights — Sentiment & ICP Scoring
+// ----------------------------------------------------
+
+app.get("/api/admin/insights/overview", async (_req, res) => {
+  try {
+    const data = await getInsightsOverview(pool);
+    return res.status(200).json(data);
+  } catch (error) {
+    console.error("Insights overview error:", error);
+    return res.status(500).json({ error: error.message ?? "Failed to load insights overview." });
+  }
+});
+
+app.get("/api/admin/sessions/:sessionId/insights", async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const insights = await getSessionInsights(pool, sessionId);
+    if (!insights) {
+      return res.status(404).json({ error: "No insights generated for this session yet." });
+    }
+    return res.status(200).json(insights);
+  } catch (error) {
+    console.error("Get session insights error:", error);
+    return res.status(500).json({ error: error.message ?? "Failed to load session insights." });
+  }
+});
+
+app.post("/api/admin/sessions/:sessionId/insights/analyze", async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const insights = await analyzeSessionInsights(pool, sessionId);
+    return res.status(200).json(insights);
+  } catch (error) {
+    console.error("Analyze session insights error:", error);
+    return res.status(500).json({ error: error.message ?? "Failed to analyze session." });
+  }
+});
+
+// ----------------------------------------------------
+// 6. Knowledge Base / Document Ingestion (Admin)
+// ----------------------------------------------------
+
+app.get("/api/admin/documents", async (_req, res) => {
+  try {
+    const [documents, totalChunks] = await Promise.all([
+      listKnowledgeDocuments(),
+      getCollectionPointCount(),
+    ]);
+
+    return res.status(200).json({
+      documents,
+      totalDocuments: documents.length,
+      totalChunks,
+    });
+  } catch (error) {
+    console.error("List documents error:", error);
+    return res.status(500).json({ error: error.message ?? "Failed to list documents." });
+  }
+});
+
+app.post("/api/admin/documents/upload", pdfUpload.single("file"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "PDF file is required." });
+    }
+
+    const result = await ingestUploadedPdf(req.file.buffer, req.file.originalname);
+    return res.status(201).json({
+      message: "Document uploaded and indexed successfully.",
+      ...result,
+    });
+  } catch (error) {
+    console.error("Document upload error:", error);
+    return res.status(500).json({ error: error.message ?? "Failed to upload document." });
+  }
+});
+
+app.delete("/api/admin/documents", async (req, res) => {
+  try {
+    const source = req.query.source?.trim();
+    if (!source) {
+      return res.status(400).json({ error: "source query parameter is required." });
+    }
+
+    await deleteKnowledgeDocument(source);
+    return res.status(200).json({
+      message: "Document removed from vector database.",
+      source,
+    });
+  } catch (error) {
+    console.error("Delete document error:", error);
+    return res.status(500).json({ error: error.message ?? "Failed to delete document." });
+  }
+});
+
+app.use((error, _req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    return res.status(400).json({ error: error.message });
+  }
+  if (error?.message === "Only PDF files are allowed.") {
+    return res.status(400).json({ error: error.message });
+  }
+  return next(error);
 });
 
 // ----------------------------------------------------

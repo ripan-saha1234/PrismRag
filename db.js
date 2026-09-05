@@ -47,7 +47,17 @@ export async function initDb() {
       UNIQUE(session_id, question_id)
     );
 
-    CREATE INDEX IF NOT EXISTS idx_session_survey_answers_session_id ON session_survey_answers(session_id);
+    CREATE TABLE IF NOT EXISTS tracked_pages (
+      id SERIAL PRIMARY KEY,
+      label VARCHAR NOT NULL,
+      url TEXT NOT NULL UNIQUE,
+      page_type VARCHAR NOT NULL DEFAULT 'auto',
+      is_active BOOLEAN DEFAULT TRUE,
+      last_fetched_at TIMESTAMP WITH TIME ZONE,
+      last_fetch_status VARCHAR,
+      last_fetch_error TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
   `;
 
   // Auto-migration to handle any existing tables created with older column schemas
@@ -58,6 +68,9 @@ export async function initDb() {
     ALTER TABLE onboarding_questions ADD COLUMN IF NOT EXISTS options JSONB DEFAULT '[]'::jsonb;
     
     ALTER TABLE session_survey_answers ADD COLUMN IF NOT EXISTS selected_option TEXT;
+    
+    ALTER TABLE tracked_pages ADD COLUMN IF NOT EXISTS page_content_cache TEXT;
+    ALTER TABLE tracked_pages ADD COLUMN IF NOT EXISTS cache_updated_at TIMESTAMP WITH TIME ZONE;
     
     DO $$
     BEGIN

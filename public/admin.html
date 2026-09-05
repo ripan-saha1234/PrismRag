@@ -712,6 +712,145 @@
       border-radius: 10px;
       transition: width 0.5s ease;
     }
+
+    /* Tracked Pages Styles */
+    .pages-table-container {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .pages-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+
+    .pages-table th {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 12px 16px;
+      color: var(--text-muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--card-border);
+      text-transform: uppercase;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+
+    .pages-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      vertical-align: middle;
+    }
+
+    .pages-table tr:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+
+    .status-badge.success {
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #4ade80;
+    }
+
+    .status-badge.failed {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+
+    .status-badge.never, .status-badge.pending {
+      background: rgba(148, 163, 184, 0.15);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      color: #94a3b8;
+    }
+
+    .type-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      color: #a5b4fc;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-box {
+      background: #0f1320;
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    }
+
+    .modal-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-header h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .modal-body {
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
   </style>
 </head>
 <body>
@@ -734,6 +873,9 @@
       </button>
       <button class="tab-btn" onclick="switchTab('poll-results')">
         📊 Survey Analytics
+      </button>
+      <button class="tab-btn" onclick="switchTab('tracked-pages')">
+        🌐 Tracked Pages
       </button>
     </div>
 
@@ -901,7 +1043,106 @@
       </div>
     </div>
 
+    <!-- TAB 4: Tracked Company Pages Manager -->
+    <div class="tab-pane" id="pane-tracked-pages">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <div>
+          <h2 style="font-size: 1.25rem; font-weight: 700;">Company Website Tracked Pages</h2>
+          <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: 2px;">
+            Manage company pages that the AI assistant references. Pages are refreshed every 3 hours or on demand.
+          </p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn" id="btnRefreshAllPages" onclick="refreshAllTrackedPages()">
+            ⚡ Refresh All Now
+          </button>
+          <button class="btn btn-primary" onclick="openAddPageModal()">
+            ➕ Add Page
+          </button>
+        </div>
+      </div>
+
+      <div class="pages-table-container">
+        <table class="pages-table">
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>URL</th>
+              <th>Type</th>
+              <th>Cache Updated</th>
+              <th>Status</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="trackedPagesTableBody">
+            <tr>
+              <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">
+                Loading tracked pages...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </main>
+
+  <!-- Add / Edit Page Modal -->
+  <div class="modal-overlay" id="pageModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="pageModalTitle">Add Tracked Page</h3>
+        <button class="icon-btn" onclick="closePageModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="pageFormId" />
+        <div class="form-group">
+          <label for="pageFormLabel">Page Label *</label>
+          <input type="text" id="pageFormLabel" class="form-input" placeholder="e.g. Services & Solutions" />
+        </div>
+        <div class="form-group">
+          <label for="pageFormUrl">Page URL *</label>
+          <input type="url" id="pageFormUrl" class="form-input" placeholder="https://webprismdynamics.com/services" />
+        </div>
+        <div class="form-group">
+          <label for="pageFormType">Page Type</label>
+          <select id="pageFormType" class="form-select">
+            <option value="auto">Auto (Static fetch with React/Puppeteer fallback)</option>
+            <option value="react">React (Headless Puppeteer browser render)</option>
+            <option value="static">Static (HTML fetch only)</option>
+          </select>
+        </div>
+        <div class="form-group" id="pageActiveGroup" style="display: none; flex-direction: row; align-items: center; gap: 8px;">
+          <input type="checkbox" id="pageFormActive" checked />
+          <label for="pageFormActive" style="cursor: pointer;">Active (enable assistant lookup & scheduled refresh)</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closePageModal()">Cancel</button>
+        <button class="btn btn-primary" id="btnSavePage" onclick="saveTrackedPage()">Save Page</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Fetch / Preview Modal -->
+  <div class="modal-overlay" id="previewModal">
+    <div class="modal-box" style="max-width: 800px;">
+      <div class="modal-header">
+        <h3 id="previewModalTitle">Live Test Fetch Result</h3>
+        <button class="icon-btn" onclick="closePreviewModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="previewMeta" style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;"></div>
+        <div class="form-group" style="margin-top: 10px;">
+          <label>Extracted Body Text (Preview):</label>
+          <pre id="previewTextContent" style="background: rgba(0,0,0,0.5); padding: 14px; border-radius: 10px; border: 1px solid var(--card-border); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; max-height: 380px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; color: #e2e8f0;"></pre>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closePreviewModal()">Close</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     const API_BASE = (window.location.port === '3000' || window.location.hostname === '') ? '' : 'http://localhost:3000';
@@ -918,7 +1159,8 @@
         btn.classList.toggle('active', 
           (tabId === 'analytics' && index === 0) || 
           (tabId === 'questions' && index === 1) || 
-          (tabId === 'poll-results' && index === 2)
+          (tabId === 'poll-results' && index === 2) ||
+          (tabId === 'tracked-pages' && index === 3)
         );
       });
 
@@ -937,6 +1179,8 @@
         loadQuestions();
       } else if (currentTab === 'poll-results') {
         loadSurveyAnalytics();
+      } else if (currentTab === 'tracked-pages') {
+        loadTrackedPages();
       }
     }
 
@@ -1331,6 +1575,267 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+    }
+
+    /* Tracked Pages Management Logic */
+    let trackedPagesCache = [];
+
+    async function loadTrackedPages() {
+      const tbody = document.getElementById('trackedPagesTableBody');
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/pages`);
+        if (!res.ok) throw new Error('Failed to load tracked pages');
+        const pages = await res.json();
+        trackedPagesCache = pages;
+
+        if (pages.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 32px;">
+                No pages are tracked yet. Click <strong>➕ Add Page</strong> above to track a website page.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = pages.map(page => {
+          let statusClass = 'never';
+          let statusText = 'Never Fetched';
+
+          if (page.last_fetch_status === 'success') {
+            statusClass = 'success';
+            statusText = 'Success';
+          } else if (page.last_fetch_status === 'failed') {
+            statusClass = 'failed';
+            statusText = 'Failed';
+          }
+
+          const cacheUpdatedStr = page.cache_updated_at
+            ? new Date(page.cache_updated_at).toLocaleString()
+            : (page.last_fetched_at ? new Date(page.last_fetched_at).toLocaleString() : 'Never');
+
+          const errorTooltip = page.last_fetch_error ? `title="${escapeHtml(page.last_fetch_error)}"` : '';
+
+          return `
+            <tr id="page-row-${page.id}" style="${!page.is_active ? 'opacity: 0.55;' : ''}">
+              <td>
+                <div style="font-weight: 600; color: #fff;">${escapeHtml(page.label)}</div>
+                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">ID: ${page.id} ${!page.is_active ? '• (Inactive)' : ''}</div>
+              </td>
+              <td>
+                <a href="${escapeHtml(page.url)}" target="_blank" style="color: var(--accent); text-decoration: none; word-break: break-all; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">
+                  ${escapeHtml(page.url)} ↗
+                </a>
+              </td>
+              <td>
+                <span class="type-badge">${escapeHtml(page.page_type || 'auto')}</span>
+              </td>
+              <td style="color: var(--text-muted); font-size: 0.8rem;">
+                ${cacheUpdatedStr}
+              </td>
+              <td>
+                <span class="status-badge ${statusClass}" ${errorTooltip} style="cursor: ${page.last_fetch_error ? 'help' : 'default'}">
+                  ${statusClass === 'success' ? '●' : (statusClass === 'failed' ? '▲' : '○')} ${statusText}
+                </span>
+                ${page.last_fetch_error ? `<div style="color: #f87171; font-size: 0.72rem; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px;" title="${escapeHtml(page.last_fetch_error)}">${escapeHtml(page.last_fetch_error)}</div>` : ''}
+              </td>
+              <td style="text-align: right;">
+                <div style="display: inline-flex; gap: 6px;">
+                  <button class="btn" style="padding: 5px 10px; font-size: 0.76rem;" onclick="testFetchPage(${page.id})" id="btnTestFetch-${page.id}" title="Run live fetch preview right now">
+                    🔍 Test Fetch
+                  </button>
+                  <button class="icon-btn" onclick="openEditPageModal(${page.id})" title="Edit page">
+                    ✏️
+                  </button>
+                  <button class="icon-btn btn-delete" onclick="deleteTrackedPage(${page.id})" title="Remove page">
+                    🗑️
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error("Error loading tracked pages:", err);
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align: center; color: #ef4444; padding: 24px;">
+              Failed to load tracked pages: ${escapeHtml(err.message)}
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    function openAddPageModal() {
+      document.getElementById('pageModalTitle').textContent = 'Add Tracked Page';
+      document.getElementById('pageFormId').value = '';
+      document.getElementById('pageFormLabel').value = '';
+      document.getElementById('pageFormUrl').value = '';
+      document.getElementById('pageFormType').value = 'auto';
+      document.getElementById('pageFormActive').checked = true;
+      document.getElementById('pageActiveGroup').style.display = 'none';
+      document.getElementById('pageModal').classList.add('active');
+    }
+
+    function openEditPageModal(pageId) {
+      const page = trackedPagesCache.find(p => p.id === pageId);
+      if (!page) return;
+
+      document.getElementById('pageModalTitle').textContent = 'Edit Tracked Page';
+      document.getElementById('pageFormId').value = page.id;
+      document.getElementById('pageFormLabel').value = page.label || '';
+      document.getElementById('pageFormUrl').value = page.url || '';
+      document.getElementById('pageFormType').value = page.page_type || 'auto';
+      document.getElementById('pageFormActive').checked = page.is_active !== false;
+      document.getElementById('pageActiveGroup').style.display = 'flex';
+      document.getElementById('pageModal').classList.add('active');
+    }
+
+    function closePageModal() {
+      document.getElementById('pageModal').classList.remove('active');
+    }
+
+    function closePreviewModal() {
+      document.getElementById('previewModal').classList.remove('active');
+    }
+
+    async function saveTrackedPage() {
+      const id = document.getElementById('pageFormId').value;
+      const label = document.getElementById('pageFormLabel').value.trim();
+      const url = document.getElementById('pageFormUrl').value.trim();
+      const page_type = document.getElementById('pageFormType').value;
+      const is_active = document.getElementById('pageFormActive').checked;
+      const saveBtn = document.getElementById('btnSavePage');
+
+      if (!label || !url) {
+        alert('Please provide both a label and a URL.');
+        return;
+      }
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+
+      try {
+        let res;
+        if (id) {
+          res = await fetch(`${API_BASE}/api/admin/pages/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ label, url, page_type, is_active }),
+          });
+        } else {
+          res = await fetch(`${API_BASE}/api/admin/pages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ label, url, page_type }),
+          });
+        }
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to save page.');
+        }
+
+        closePageModal();
+        loadTrackedPages();
+      } catch (err) {
+        alert('Error saving page: ' + err.message);
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Page';
+      }
+    }
+
+    async function deleteTrackedPage(id) {
+      if (!confirm(`Are you sure you want to stop tracking and delete page ID ${id}?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/pages/${id}`, {
+          method: 'DELETE',
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Failed to delete page.');
+        }
+
+        loadTrackedPages();
+      } catch (err) {
+        alert('Error deleting page: ' + err.message);
+      }
+    }
+
+    async function testFetchPage(id) {
+      const btn = document.getElementById(`btnTestFetch-${id}`);
+      const origText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Fetching...';
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/pages/${id}/test-fetch`, {
+          method: 'POST',
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Test fetch failed');
+        }
+
+        document.getElementById('previewModalTitle').textContent = `Test Fetch: ${data.label}`;
+        document.getElementById('previewMeta').innerHTML = `
+          <strong>URL:</strong> <a href="${escapeHtml(data.url)}" target="_blank" style="color: var(--accent);">${escapeHtml(data.url)}</a><br>
+          <strong>Configured Type:</strong> ${escapeHtml(data.page_type)}<br>
+          <strong>Extracted Length:</strong> ${data.extracted_length} characters
+        `;
+        document.getElementById('previewTextContent').textContent = data.extracted_text || '(No text extracted)';
+        document.getElementById('previewModal').classList.add('active');
+      } catch (err) {
+        alert('Test fetch failed: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origText;
+        }
+      }
+    }
+
+    async function refreshAllTrackedPages() {
+      const btn = document.getElementById('btnRefreshAllPages');
+      const origText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Refreshing All...';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/pages/refresh-all`, {
+          method: 'POST',
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to refresh pages');
+        }
+
+        await loadTrackedPages();
+
+        if (Array.isArray(data.summary)) {
+          const succeeded = data.summary.filter(s => s.status === 'success').length;
+          const failed = data.summary.filter(s => s.status === 'failed').length;
+          alert(`Refresh complete!\nSucceeded: ${succeeded}\nFailed: ${failed}`);
+        } else {
+          alert('Refresh completed successfully.');
+        }
+      } catch (err) {
+        alert('Error refreshing pages: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+      }
     }
 
     function loadDashboard() {

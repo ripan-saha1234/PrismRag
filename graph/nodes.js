@@ -1,6 +1,6 @@
 import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { END } from "@langchain/langgraph";
-import { buildSystemPrompt } from "../knowledge/loadKnowledge.js";
+import { buildSystemPrompt, getActiveTrackedPagesList } from "../knowledge/loadKnowledge.js";
 import {
   formatRetrievedContext,
   searchCompanyKnowledge,
@@ -46,11 +46,14 @@ function getUserQuery(state) {
 
 export async function callModel(state) {
   const query = getUserQuery(state);
-  const hits = query ? await searchCompanyKnowledge(query) : [];
+  const [hits, trackedPages] = await Promise.all([
+    query ? searchCompanyKnowledge(query) : Promise.resolve([]),
+    getActiveTrackedPagesList(),
+  ]);
   const context = formatRetrievedContext(hits);
 
   const response = await llmWithTools.invoke([
-    new SystemMessage(buildSystemPrompt(context, state.userContext || "")),
+    new SystemMessage(buildSystemPrompt(context, state.userContext || "", trackedPages)),
     ...state.messages,
   ]);
 

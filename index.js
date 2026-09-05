@@ -4,6 +4,7 @@ import "./graph/config.js";
 import { runAgent } from "./graph/agent.js";
 import { ingestKnowledgePdfs } from "./knowledge/vectorstore.js";
 import { pool, initDb } from "./db.js";
+import { fetchPageContent, refreshTrackedPages } from "./knowledge/pageFetchers.js";
 
 const app = express();
 const port = 3000;
@@ -525,9 +526,162 @@ app.delete("/api/admin/sessions/:sessionId", async (req, res) => {
   }
 });
 
+// ----------------------------------------------------
+// Admin Tracked Company Pages Routes
+// ----------------------------------------------------
+app.get("/api/admin/pages", async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, label, url, page_type, is_active, last_fetched_at, last_fetch_status, last_fetch_error, cache_updated_at
+       FROM tracked_pages
+       ORDER BY id ASC`
+    );
+    return res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error fetching tracked pages:", error);
+    return res.status(500).json({ error: "Failed to retrieve tracked pages." });
+  }
+});
+
+app.post("/api/admin/pages", async (req, res) => {
+  try {
+    const { label, url, page_type = "auto" } = req.body;
+
+    if (!label?.trim() || !url?.trim()) {
+      return res.status(400).json({ error: "Both label and url are required." });
+    }
+
+    const cleanType = ["auto", "static", "react"].includes(page_type?.toLowerCase())
+      ? page_type.toLowerCase()
+      : "auto";
+
+    const result = await pool.query(
+      `INSERT INTO tracked_pages (label, url, page_type, is_active)
+       VALUES ($1, $2, $3, TRUE)
+       RETURNING id, label, url, page_type, is_active, last_fetched_at, last_fetch_status, last_fetch_error, cache_updated_at`,
+      [label.trim(), url.trim(), cleanType]
+    );
+
+    return res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error("Error creating tracked page:", error);
+    if (error.code === "23505") {
+      return res.status(409).json({ error: "A page with this URL is already tracked." });
+    }
+    return res.status(500).json({ error: error.message || "Failed to create tracked page." });
+  }
+});
+
+app.put("/api/admin/pages/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { label, url, page_type, is_active } = req.body;
+
+    const existing = await pool.query(`SELECT * FROM tracked_pages WHERE id = $1`, [id]);
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ error: "Tracked page not found." });
+    }
+
+    const current = existing.rows[0];
+    const newLabel = label !== undefined ? label.trim() : current.label;
+    const newUrl = url !== undefined ? url.trim() : current.url;
+    let newType = page_type !== undefined ? page_type.toLowerCase() : current.page_type;
+    if (!["auto", "static", "react"].includes(newType)) {
+      newType = current.page_type;
+    }
+    const newIsActive = is_active !== undefined ? Boolean(is_active) : current.is_active;
+
+    const result = await pool.query(
+      `UPDATE tracked_pages
+       SET label = $1, url = $2, page_type = $3, is_active = $4
+       WHERE id = $5
+       RETURNING id, label, url, page_type, is_active, last_fetched_at, last_fetch_status, last_fetch_error, cache_updated_at`,
+      [newLabel, newUrl, newType, newIsActive, id]
+    );
+
+    return res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error("Error updating tracked page:", error);
+    if (error.code === "23505") {
+      return res.status(409).json({ error: "Another page with this URL already exists." });
+    }
+    return res.status(500).json({ error: error.message || "Failed to update tracked page." });
+  }
+});
+
+app.delete("/api/admin/pages/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(`DELETE FROM tracked_pages WHERE id = $1 RETURNING id`, [id]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Tracked page not found." });
+    }
+
+    return res.status(200).json({ message: "Tracked page deleted successfully.", id });
+  } catch (error) {
+    console.error("Error deleting tracked page:", error);
+    return res.status(500).json({ error: "Failed to delete tracked page." });
+  }
+});
+
+app.post("/api/admin/pages/:id/test-fetch", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const pageRes = await pool.query(`SELECT id, label, url, page_type FROM tracked_pages WHERE id = $1`, [id]);
+
+    if (pageRes.rows.length === 0) {
+      return res.status(404).json({ error: "Tracked page not found." });
+    }
+
+    const page = pageRes.rows[0];
+    const text = await fetchPageContent(page.url, page.page_type);
+
+    return res.status(200).json({
+      id: page.id,
+      label: page.label,
+      url: page.url,
+      page_type: page.page_type,
+      extracted_length: text.length,
+      extracted_text: text,
+    });
+  } catch (error) {
+    console.error("Error in test-fetch:", error);
+    return res.status(500).json({ error: error.message || "Failed to fetch page content." });
+  }
+});
+
+app.post("/api/admin/pages/refresh-all", async (req, res) => {
+  try {
+    const summary = await refreshTrackedPages();
+    return res.status(200).json({
+      message: "Refreshed tracked pages.",
+      summary,
+    });
+  } catch (error) {
+    console.error("Error during manual refresh of tracked pages:", error);
+    return res.status(500).json({ error: error.message || "Failed to refresh pages." });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
-  initDb().catch((err) => console.error("Database init error:", err));
+  initDb()
+    .then(async () => {
+      // Refresh tracked pages once on startup, then every 3 hours
+      refreshTrackedPages().catch((err) => {
+        console.error("Initial refresh of tracked pages failed:", err);
+      });
+
+      const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
+      setInterval(() => {
+        refreshTrackedPages().catch((err) => {
+          console.error("Scheduled refresh of tracked pages failed:", err);
+        });
+      }, THREE_HOURS_MS);
+    })
+    .catch((err) => console.error("Database init error:", err));
+
   ingestKnowledgePdfs().catch((error) => {
     console.error("Failed to ingest PDFs:", error);
   });

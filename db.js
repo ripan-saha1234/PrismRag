@@ -78,6 +78,7 @@ export async function initDb() {
         SELECT 1 FROM information_schema.columns 
         WHERE table_name = 'session_survey_answers' AND column_name = 'selected_options'
       ) THEN
+        ALTER TABLE session_survey_answers ALTER COLUMN selected_options DROP NOT NULL;
         UPDATE session_survey_answers 
         SET selected_option = COALESCE(selected_option, selected_options::text)
         WHERE selected_option IS NULL;

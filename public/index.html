@@ -618,6 +618,12 @@
     const progressFill = document.getElementById('progressFill');
     const quickChips = document.getElementById('quickChips');
 
+    const API_BASE = (window.location.port === '3000' || window.location.hostname === '') 
+      ? '' 
+      : (window.location.protocol === 'http:' || window.location.protocol === 'https:' 
+          ? `http://${window.location.hostname}:3000` 
+          : 'http://localhost:3000');
+
     let questionsList = [];
     let currentQuestionIndex = 0;
     let isSurveyActive = true;
@@ -696,12 +702,17 @@
       try {
         // 1. Fetch questions and session onboarding status
         const [questionsRes, statusRes] = await Promise.all([
-          fetch('/api/onboarding/questions'),
-          fetch(`/api/onboarding/status/${sessionId}`)
+          fetch(`${API_BASE}/api/onboarding/questions`),
+          fetch(`${API_BASE}/api/onboarding/status/${sessionId}`)
         ]);
 
-        questionsList = await questionsRes.json();
-        const status = await statusRes.json();
+        if (!questionsRes.ok || !statusRes.ok) {
+          throw new Error(`Failed to load onboarding API (${questionsRes.status} / ${statusRes.status})`);
+        }
+
+        const [qText, sText] = await Promise.all([questionsRes.text(), statusRes.text()]);
+        questionsList = qText ? JSON.parse(qText) : [];
+        const status = sText ? JSON.parse(sText) : {};
 
         // If no questions exist in the DB or all are already completed
         if (!questionsList || questionsList.length === 0 || status.completed) {
@@ -820,7 +831,7 @@
 
       // 2. Persist answer to backend
       try {
-        await fetch('/api/onboarding/answers', {
+        await fetch(`${API_BASE}/api/onboarding/answers`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -901,7 +912,7 @@
       appendLoadingIndicator();
 
       try {
-        const response = await fetch('/ai', {
+        const response = await fetch(`${API_BASE}/ai`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -910,13 +921,20 @@
           })
         });
 
-        const data = await response.json();
+        const textResp = await response.text();
+        let data = {};
+        try {
+          data = textResp ? JSON.parse(textResp) : {};
+        } catch (parseErr) {
+          throw new Error(`Server returned status ${response.status} with non-JSON response: ${textResp.slice(0, 150) || '(empty body)'}`);
+        }
+
         removeLoadingIndicator();
 
         if (response.ok) {
           appendMessage(data.aismsg || data.prompt || "No response received.", 'bot');
         } else {
-          appendMessage(`Error: ${data.error || "Failed to get response"}`, 'bot');
+          appendMessage(`Error: ${data.error || textResp || "Failed to get response"}`, 'bot');
         }
       } catch (err) {
         removeLoadingIndicator();

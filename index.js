@@ -165,14 +165,14 @@ app.post("/api/onboarding/answers", async (req, res) => {
       [sessionId]
     );
 
-    // Upsert answer
+    // Upsert answer - populate both selected_option and selected_options (as JSON array) to satisfy legacy schemas
     const result = await pool.query(
-      `INSERT INTO session_survey_answers (session_id, question_id, selected_option, created_at)
-       VALUES ($1, $2, $3, NOW())
+      `INSERT INTO session_survey_answers (session_id, question_id, selected_option, selected_options, created_at)
+       VALUES ($1, $2, $3, $4::jsonb, NOW())
        ON CONFLICT (session_id, question_id) 
-       DO UPDATE SET selected_option = $3, created_at = NOW()
+       DO UPDATE SET selected_option = $3, selected_options = $4::jsonb, created_at = NOW()
        RETURNING *`,
-      [sessionId, questionId, selectedOption]
+      [sessionId, questionId, selectedOption, JSON.stringify([selectedOption])]
     );
 
     return res.status(200).json({ success: true, answer: result.rows[0] });

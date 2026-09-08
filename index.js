@@ -34,7 +34,41 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
 app.use(express.json());
-app.use(express.static("public"));
+
+// Root & Health Check Endpoints for Backend Server
+app.get("/", (_req, res) => {
+  res.status(200).json({
+    status: "online",
+    message: "PrismRag backend server is running.",
+    version: "1.0.0",
+    endpoints: {
+      health: "/health",
+      aiChat: "/ai",
+      testUi: "/test/",
+    },
+  });
+});
+
+app.get("/health", async (_req, res) => {
+  try {
+    const dbCheck = await pool.query("SELECT 1 AS ok");
+    res.status(200).json({
+      status: "healthy",
+      database: dbCheck.rows[0]?.ok === 1 ? "connected" : "unknown",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "degraded",
+      database: "disconnected",
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// Internal test tools for development testing only (mounted under /test)
+app.use("/test", express.static("public"));
 
 const pdfUpload = multer({
   storage: multer.memoryStorage(),

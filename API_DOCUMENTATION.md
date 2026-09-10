@@ -40,7 +40,14 @@ Comprehensive technical reference for all REST API endpoints in the **PrismRAG**
    - [`DELETE /api/admin/pages/:id`](#delete-apiadminpagesid)
    - [`POST /api/admin/pages/:id/test-fetch`](#post-apiadminpagesidtest-fetch)
    - [`POST /api/admin/pages/refresh-all`](#post-apiadminpagesrefresh-all)
-10. [Data Models & Schema Reference](#data-models--schema-reference)
+10. [Hook Messages APIs (Widget Proactive Popups)](#8-hook-messages-apis-widget-proactive-popups)
+    - [`GET /api/hook-messages`](#get-apihook-messages)
+    - [`GET /api/admin/hook-messages`](#get-apiadminhook-messages)
+    - [`POST /api/admin/hook-messages`](#post-apiadminhook-messages)
+    - [`PUT /api/admin/hook-messages/:id`](#put-apiadminhook-messagesid)
+    - [`DELETE /api/admin/hook-messages/:id`](#delete-apiadminhook-messagesid)
+    - [`POST /api/admin/hook-messages/reorder`](#post-apiadminhook-messagesreorder)
+11. [Data Models & Schema Reference](#data-models--schema-reference)
 
 ---
 
@@ -1083,6 +1090,213 @@ Forces an immediate on-demand background refresh of all active tracked pages usi
 
 ---
 
+## 8. Hook Messages APIs (Widget Proactive Popups)
+
+Hook Messages are short, proactive speech-bubble messages displayed on the embedded `widget.html` chat button at hardcoded time intervals (`5 s` first popup, `30 s` rotation, stops after `3` shows). Admins manage the message list through the Admin Panel.
+
+### `GET /api/hook-messages`
+**Public** — no authentication required. Returns all active hook messages in display order. Used by the chat widget on page load.
+
+#### Request
+- **Method**: `GET`
+- **URL**: `/api/hook-messages`
+
+#### Success Response (`200 OK`)
+```json
+[
+  {
+    "id": 1,
+    "message_text": "👋 Hey! Need help figuring out our services? Ask our AI assistant!",
+    "sort_order": 1
+  },
+  {
+    "id": 2,
+    "message_text": "💡 Did you know we build custom AI agents? Ask us how!",
+    "sort_order": 2
+  }
+]
+```
+
+---
+
+### `GET /api/admin/hook-messages`
+Returns all hook messages (active **and** inactive) for the Admin Panel.
+
+#### Request
+- **Method**: `GET`
+- **URL**: `/api/admin/hook-messages`
+
+#### Success Response (`200 OK`)
+```json
+[
+  {
+    "id": 1,
+    "message_text": "👋 Hey! Need help figuring out our services?",
+    "sort_order": 1,
+    "is_active": true,
+    "created_at": "2026-09-11T00:00:00.000Z"
+  },
+  {
+    "id": 2,
+    "message_text": "💡 Did you know we build custom AI agents?",
+    "sort_order": 2,
+    "is_active": false,
+    "created_at": "2026-09-11T00:01:00.000Z"
+  }
+]
+```
+
+---
+
+### `POST /api/admin/hook-messages`
+Creates a new hook message. `sort_order` is automatically assigned as `MAX(sort_order) + 1`.
+
+#### Request
+- **Method**: `POST`
+- **URL**: `/api/admin/hook-messages`
+- **Headers**: `Content-Type: application/json`
+- **Body Schema**:
+  ```json
+  {
+    "message_text": "string (required)",
+    "is_active": "boolean (optional, default: true)"
+  }
+  ```
+
+#### Validation Rules
+| Field | Type | Required | Rules & Validation |
+| :--- | :--- | :--- | :--- |
+| `message_text` | String | **Yes** | Non-empty string after trimming. Returns `400 Bad Request` if missing. |
+| `is_active` | Boolean | No | Defaults to `true`. |
+
+#### Example Request Body
+```json
+{
+  "message_text": "👋 Hey! Got questions? Our AI can help.",
+  "is_active": true
+}
+```
+
+#### Success Response (`201 Created`)
+```json
+{
+  "id": 3,
+  "message_text": "👋 Hey! Got questions? Our AI can help.",
+  "sort_order": 3,
+  "is_active": true,
+  "created_at": "2026-09-11T01:00:00.000Z"
+}
+```
+
+#### Error Responses
+- **`400 Bad Request`**:
+  ```json
+  {
+    "error": "message_text is required."
+  }
+  ```
+
+---
+
+### `PUT /api/admin/hook-messages/:id`
+Updates an existing hook message. Fields not passed retain their current values.
+
+#### Request
+- **Method**: `PUT`
+- **URL**: `/api/admin/hook-messages/:id`
+- **Path Parameters**:
+  | Parameter | Type | Description |
+  | :--- | :--- | :--- |
+  | `id` | Integer | Hook message ID |
+- **Body Schema**: Any combination of `{ message_text, is_active, sort_order }`.
+
+#### Success Response (`200 OK`)
+```json
+{
+  "id": 1,
+  "message_text": "🚀 Let's build your AI roadmap together!",
+  "sort_order": 1,
+  "is_active": true,
+  "created_at": "2026-09-11T00:00:00.000Z"
+}
+```
+
+#### Error Responses
+- **`404 Not Found`**:
+  ```json
+  {
+    "error": "Hook message not found."
+  }
+  ```
+
+---
+
+### `DELETE /api/admin/hook-messages/:id`
+Permanently deletes a hook message by ID.
+
+#### Request
+- **Method**: `DELETE`
+- **URL**: `/api/admin/hook-messages/:id`
+- **Path Parameters**:
+  | Parameter | Type | Description |
+  | :--- | :--- | :--- |
+  | `id` | Integer | Hook message ID |
+
+#### Success Response (`200 OK`)
+```json
+{
+  "message": "Hook message deleted.",
+  "id": "1"
+}
+```
+
+#### Error Responses
+- **`404 Not Found`**:
+  ```json
+  {
+    "error": "Hook message not found."
+  }
+  ```
+
+---
+
+### `POST /api/admin/hook-messages/reorder`
+Bulk-updates the `sort_order` of all hook messages in one call. The array index position determines the new order (index `0` → `sort_order = 1`).
+
+#### Request
+- **Method**: `POST`
+- **URL**: `/api/admin/hook-messages/reorder`
+- **Headers**: `Content-Type: application/json`
+- **Body Schema**:
+  ```json
+  {
+    "orderedIds": [3, 1, 2]
+  }
+  ```
+
+#### Validation Rules
+| Field | Type | Required | Rules & Validation |
+| :--- | :--- | :--- | :--- |
+| `orderedIds` | Array of Integers | **Yes** | Must be a valid array. Returns `400 Bad Request` if missing or not an array. |
+
+#### Success Response (`200 OK`)
+```json
+{
+  "success": true,
+  "message": "Order updated."
+}
+```
+
+#### Error Responses
+- **`400 Bad Request`**:
+  ```json
+  {
+    "error": "orderedIds array is required."
+  }
+  ```
+
+---
+
 ## Data Models & Schema Reference
 
 ### 1. `chat_sessions`
@@ -1158,4 +1372,13 @@ Forces an immediate on-demand background refresh of all active tracked pages usi
 | `last_fetched_at` | `TIMESTAMPTZ` | Nullable | Timestamp of last attempt (success or failure). |
 | `last_fetch_status`| `VARCHAR` | Nullable | `'success'` or `'failed'`. |
 | `last_fetch_error` | `TEXT` | Nullable | Error message if last fetch failed. |
+| `created_at` | `TIMESTAMPTZ` | Default `NOW()` | Creation timestamp. |
+
+### 7. `hook_messages`
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `SERIAL` | Primary Key | Unique message ID. |
+| `message_text` | `TEXT` | Not Null | The proactive message shown in the speech bubble. |
+| `sort_order` | `INT` | Not Null, Default `1` | Display sequence. Lower value appears first. |
+| `is_active` | `BOOLEAN` | Default `TRUE` | If `false`, message is skipped by the widget and excluded from `GET /api/hook-messages`. |
 | `created_at` | `TIMESTAMPTZ` | Default `NOW()` | Creation timestamp. |

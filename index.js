@@ -913,6 +913,136 @@ app.post("/api/admin/pages/refresh-all", async (req, res) => {
   }
 });
 
+// ----------------------------------------------------
+// 7. Hook Messages (Widget Proactive Popups)
+// ----------------------------------------------------
+
+// Public endpoint — widget fetches active messages on load (no auth needed)
+app.get("/api/hook-messages", async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, message_text, sort_order
+       FROM hook_messages
+       WHERE is_active = TRUE
+       ORDER BY sort_order ASC, id ASC`
+    );
+    return res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error fetching hook messages:", error);
+    return res.status(500).json({ error: "Failed to fetch hook messages." });
+  }
+});
+
+// Admin: list all hook messages (including inactive)
+app.get("/api/admin/hook-messages", async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, message_text, sort_order, is_active, created_at
+       FROM hook_messages
+       ORDER BY sort_order ASC, id ASC`
+    );
+    return res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error fetching admin hook messages:", error);
+    return res.status(500).json({ error: "Failed to fetch hook messages." });
+  }
+});
+
+// Admin: create a new hook message
+app.post("/api/admin/hook-messages", async (req, res) => {
+  try {
+    const { message_text, is_active = true } = req.body;
+    if (!message_text?.trim()) {
+      return res.status(400).json({ error: "message_text is required." });
+    }
+    const maxOrderRes = await pool.query(
+      `SELECT COALESCE(MAX(sort_order), 0) + 1 AS next_order FROM hook_messages`
+    );
+    const sort_order = maxOrderRes.rows[0].next_order;
+    const result = await pool.query(
+      `INSERT INTO hook_messages (message_text, sort_order, is_active)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [message_text.trim(), sort_order, is_active]
+    );
+    return res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error("Error creating hook message:", error);
+    return res.status(500).json({ error: "Failed to create hook message." });
+  }
+});
+
+// Admin: update hook message text / active state
+app.put("/api/admin/hook-messages/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { message_text, is_active, sort_order } = req.body;
+
+    const existing = await pool.query(`SELECT * FROM hook_messages WHERE id = $1`, [id]);
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ error: "Hook message not found." });
+    }
+    const current = existing.rows[0];
+
+    const result = await pool.query(
+      `UPDATE hook_messages
+       SET message_text = $1,
+           is_active    = $2,
+           sort_order   = $3
+       WHERE id = $4
+       RETURNING *`,
+      [
+        message_text !== undefined ? message_text.trim() : current.message_text,
+        is_active    !== undefined ? Boolean(is_active)  : current.is_active,
+        sort_order   !== undefined ? sort_order          : current.sort_order,
+        id,
+      ]
+    );
+    return res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error("Error updating hook message:", error);
+    return res.status(500).json({ error: "Failed to update hook message." });
+  }
+});
+
+// Admin: delete hook message
+app.delete("/api/admin/hook-messages/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      `DELETE FROM hook_messages WHERE id = $1 RETURNING id`,
+      [id]
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Hook message not found." });
+    }
+    return res.status(200).json({ message: "Hook message deleted.", id });
+  } catch (error) {
+    console.error("Error deleting hook message:", error);
+    return res.status(500).json({ error: "Failed to delete hook message." });
+  }
+});
+
+// Admin: reorder hook messages
+app.post("/api/admin/hook-messages/reorder", async (req, res) => {
+  try {
+    const { orderedIds } = req.body;
+    if (!Array.isArray(orderedIds)) {
+      return res.status(400).json({ error: "orderedIds array is required." });
+    }
+    for (let i = 0; i < orderedIds.length; i++) {
+      await pool.query(
+        `UPDATE hook_messages SET sort_order = $1 WHERE id = $2`,
+        [i + 1, orderedIds[i]]
+      );
+    }
+    return res.status(200).json({ success: true, message: "Order updated." });
+  } catch (error) {
+    console.error("Error reordering hook messages:", error);
+    return res.status(500).json({ error: "Failed to reorder hook messages." });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
   initDb()

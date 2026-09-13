@@ -73,9 +73,19 @@ export async function initDb() {
       url TEXT NOT NULL UNIQUE,
       page_type VARCHAR NOT NULL DEFAULT 'auto',
       is_active BOOLEAN DEFAULT TRUE,
+      page_content_cache TEXT,
+      cache_updated_at TIMESTAMP WITH TIME ZONE,
       last_fetched_at TIMESTAMP WITH TIME ZONE,
       last_fetch_status VARCHAR,
       last_fetch_error TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS hook_messages (
+      id SERIAL PRIMARY KEY,
+      message_text TEXT NOT NULL,
+      sort_order INT NOT NULL DEFAULT 1,
+      is_active BOOLEAN DEFAULT TRUE,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
   `;

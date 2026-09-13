@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PrismRag Chat Widget</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ================================================================
+       PrismRag Floating Chat Widget
+       Drop this page into an iframe or include widget.js on any page
+       ================================================================ */
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background: transparent;
+      overflow: hidden;
+    }
+
+    /* ---- Floating launcher button ---- */
+    #prism-launcher {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+      box-shadow: 0 6px 24px rgba(99, 102, 241, 0.55);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      z-index: 9999;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 0.2s ease;
+      animation: launcherPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    #prism-launcher:hover {
+      transform: scale(1.1);
+      box-shadow: 0 8px 32px rgba(99, 102, 241, 0.7);
+    }
+
+    #prism-launcher.chat-open {
+      background: linear-gradient(135deg, #4f46e5 0%, #0891b2 100%);
+    }
+
+    @keyframes launcherPop {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+
+    /* ---- Hook message speech bubble ---- */
+    #prism-hook-bubble {
+      position: fixed;
+      bottom: 96px;
+      right: 24px;
+      max-width: 300px;
+      z-index: 9998;
+      display: none;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0;
+      animation: bubbleIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    #prism-hook-bubble.visible {
+      display: flex;
+    }
+
+    @keyframes bubbleIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.92); }
+      to   { opacity: 1; transform: translateY(0)   scale(1); }
+    }
+
+    #prism-hook-bubble.hiding {
+      animation: bubbleOut 0.22s ease forwards;
+    }
+
+    @keyframes bubbleOut {
+      from { opacity: 1; transform: translateY(0)   scale(1); }
+      to   { opacity: 0; transform: translateY(8px)  scale(0.93); }
+    }
+
+    .hook-bubble-inner {
+      position: relative;
+      background: #ffffff;
+      color: #1e293b;
+      border-radius: 18px 18px 4px 18px;
+      padding: 14px 18px 14px 16px;
+      font-size: 0.88rem;
+      line-height: 1.55;
+      font-weight: 500;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+      max-width: 100%;
+      word-break: break-word;
+    }
+
+    .hook-bubble-dismiss {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      color: #94a3b8;
+      line-height: 1;
+      padding: 2px;
+      transition: color 0.15s;
+    }
+
+    .hook-bubble-dismiss:hover { color: #475569; }
+
+    .hook-bubble-text {
+      padding-right: 18px;
+    }
+
+    .hook-bubble-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 10px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #6366f1, #06b6d4);
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+
+    .hook-bubble-cta:hover {
+      opacity: 0.88;
+      transform: translateY(-1px);
+    }
+
+    /* ---- Chat iframe overlay ---- */
+    #prism-chat-overlay {
+      position: fixed;
+      bottom: 96px;
+      right: 24px;
+      width: 400px;
+      height: 620px;
+      max-width: calc(100vw - 48px);
+      max-height: calc(100vh - 120px);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+      z-index: 9997;
+      display: none;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transform-origin: bottom right;
+      animation: overlayIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    #prism-chat-overlay.open {
+      display: block;
+    }
+
+    @keyframes overlayIn {
+      from { opacity: 0; transform: scale(0.88) translateY(20px); }
+      to   { opacity: 1; transform: scale(1)    translateY(0); }
+    }
+
+    #prism-chat-iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    /* ---- Notification dot ---- */
+    #prism-notif-dot {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 14px;
+      height: 14px;
+      background: #ef4444;
+      border-radius: 50%;
+      border: 2px solid white;
+      display: none;
+      animation: dotPulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes dotPulse {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.2); }
+    }
+
+    /* ---- Demo page backdrop (remove when embedding) ---- */
+    .demo-page {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f0f1a 0%, #0c0e16 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      color: #e2e8f0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .demo-page h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #6366f1, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .demo-page p {
+      color: #64748b;
+      max-width: 480px;
+      line-height: 1.7;
+    }
+
+    .demo-note {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 12px;
+      padding: 14px 22px;
+      font-size: 0.84rem;
+      color: #a5b4fc;
+      max-width: 480px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Demo landing page backdrop — remove in production -->
+  <div class="demo-page">
+    <h1>Your Landing Page</h1>
+    <p>This is a demo of the PrismRag floating chat widget. Wait <strong>5 seconds</strong> to see the first hook message pop up.</p>
+    <div class="demo-note">
+      ⏱️ First message appears after <strong>5 s</strong> &nbsp;·&nbsp;
+      Rotates every <strong>30 s</strong> &nbsp;·&nbsp;
+      Stops after <strong>3 popups</strong>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       Floating Launcher Button
+       ============================================================ -->
+  <div style="position: fixed; bottom: 24px; right: 24px; z-index: 9999;">
+    <!-- Notification dot -->
+    <div id="prism-notif-dot"></div>
+    <button id="prism-launcher" onclick="toggleChat()" title="Chat with us" aria-label="Open chat">
+      <span id="prism-launcher-icon">✨</span>
+    </button>
+  </div>
+
+  <!-- ============================================================
+       Hook Message Speech Bubble
+       ============================================================ -->
+  <div id="prism-hook-bubble" role="dialog" aria-label="Chat invitation">
+    <div class="hook-bubble-inner">
+      <button class="hook-bubble-dismiss" onclick="dismissBubble()" aria-label="Dismiss">✕</button>
+      <div class="hook-bubble-text" id="prism-hook-text">
+        👋 Hey! Got questions? Our AI assistant can help.
+      </div>
+      <button class="hook-bubble-cta" onclick="openChat()">
+        💬 Chat with us
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       Chat Iframe Overlay
+       ============================================================ -->
+  <div id="prism-chat-overlay">
+    <iframe
+      id="prism-chat-iframe"
+      src=""
+      title="PrismRag Chat Assistant"
+      allow="microphone"
+    ></iframe>
+  </div>
+
+  <script>
+    // ================================================================
+    // ⚙️  HARDCODED TIMER CONFIGURATION
+    //     Change these constants to adjust the timing behaviour.
+    // ================================================================
+    const HOOK_FIRST_DELAY_MS = 5_000;   // ms before first popup after page load
+    const HOOK_INTERVAL_MS    = 10_000;  // ms between each subsequent popup rotation
+    const HOOK_MAX_SHOWS      = 10;       // stop after this many popups total
+
+    // ================================================================
+    // Backend URL — adjust if your backend runs on a different origin
+    // ================================================================
+    const API_BASE =
+      window.location.port && window.location.port !== '3000'
+        ? 'http://localhost:3000'
+        : '';
+
+    // Chat URL — points to the full chat widget page
+    const CHAT_URL = `${API_BASE}/index.html`;
+
+    // ================================================================
+    // State
+    // ================================================================
+    let hookMessages  = [];
+    let hookIndex     = 0;
+    let hookShowCount = 0;
+    let hookIntervalId = null;
+    let isChatOpen    = false;
+    let dismissed     = false;
+
+    const bubble    = document.getElementById('prism-hook-bubble');
+    const hookText  = document.getElementById('prism-hook-text');
+    const overlay   = document.getElementById('prism-chat-overlay');
+    const iframe    = document.getElementById('prism-chat-iframe');
+    const launcher  = document.getElementById('prism-launcher');
+    const launchIcon = document.getElementById('prism-launcher-icon');
+    const notifDot  = document.getElementById('prism-notif-dot');
+
+    // ================================================================
+    // Fetch active hook messages from backend
+    // ================================================================
+    async function fetchHookMessages() {
+      try {
+        const res = await fetch(`${API_BASE}/api/hook-messages`);
+        if (!res.ok) throw new Error('Failed to fetch');
+        hookMessages = await res.json();
+      } catch (err) {
+        console.warn('[PrismRag Widget] Could not load hook messages:', err.message);
+        // Fallback — show a default if no messages configured
+        hookMessages = [
+          { id: 0, message_text: '👋 Hey! Have questions about our services? Our AI assistant is here to help!' },
+        ];
+      }
+    }
+
+    // ================================================================
+    // Show / hide bubble
+    // ================================================================
+    function showBubble() {
+      if (dismissed || isChatOpen || hookMessages.length === 0) return;
+      if (hookShowCount >= HOOK_MAX_SHOWS) {
+        stopHookTimer();
+        return;
+      }
+
+      // Pick the message to show (rotate through list)
+      const msg = hookMessages[hookIndex % hookMessages.length];
+      hookText.textContent = msg.message_text;
+
+      // Remove hiding class, re-trigger animation
+      bubble.classList.remove('hiding');
+      bubble.classList.add('visible');
+
+      // Bump notification dot
+      notifDot.style.display = 'block';
+
+      hookShowCount++;
+      hookIndex++;
+
+      // Auto-hide bubble after 8 seconds if user doesn't interact
+      setTimeout(() => {
+        if (!isChatOpen) hideBubble(false);
+      }, 8000);
+    }
+
+    function hideBubble(permanent = false) {
+      if (!bubble.classList.contains('visible')) return;
+      bubble.classList.add('hiding');
+      setTimeout(() => {
+        bubble.classList.remove('visible', 'hiding');
+      }, 250);
+      if (permanent) dismissed = true;
+    }
+
+    function dismissBubble() {
+      hideBubble(false); // soft dismiss — still rotates on next interval
+      notifDot.style.display = 'none';
+    }
+
+    // ================================================================
+    // Hook timer
+    // ================================================================
+    function startHookTimer() {
+      if (hookMessages.length === 0) return;
+
+      // First popup after initial delay
+      setTimeout(() => {
+        showBubble();
+
+        // Then rotate on interval
+        if (HOOK_MAX_SHOWS > 1) {
+          hookIntervalId = setInterval(() => {
+            if (hookShowCount >= HOOK_MAX_SHOWS) {
+              stopHookTimer();
+              return;
+            }
+            showBubble();
+          }, HOOK_INTERVAL_MS);
+        }
+      }, HOOK_FIRST_DELAY_MS);
+    }
+
+    function stopHookTimer() {
+      if (hookIntervalId !== null) {
+        clearInterval(hookIntervalId);
+        hookIntervalId = null;
+      }
+    }
+
+    // ================================================================
+    // Chat open / close
+    // ================================================================
+    function openChat() {
+      isChatOpen = true;
+      dismissed  = true;         // stop hook popups once they open chat
+      stopHookTimer();
+      hideBubble(true);
+      notifDot.style.display = 'none';
+
+      // Lazy-load the chat iframe only when first opened
+      if (!iframe.src || iframe.src === 'about:blank') {
+        iframe.src = CHAT_URL;
+      }
+
+      overlay.classList.add('open');
+      launcher.classList.add('chat-open');
+      launchIcon.textContent = '✕';
+      launcher.setAttribute('aria-label', 'Close chat');
+    }
+
+    function closeChat() {
+      isChatOpen = false;
+      overlay.classList.remove('open');
+      launcher.classList.remove('chat-open');
+      launchIcon.textContent = '✨';
+      launcher.setAttribute('aria-label', 'Open chat');
+    }
+
+    function toggleChat() {
+      if (isChatOpen) {
+        closeChat();
+      } else {
+        openChat();
+      }
+    }
+
+    // ================================================================
+    // Keyboard: close on Escape
+    // ================================================================
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isChatOpen) closeChat();
+    });
+
+    // ================================================================
+    // Bootstrap
+    // ================================================================
+    (async () => {
+      await fetchHookMessages();
+      startHookTimer();
+    })();
+  </script>
+</body>
+</html>

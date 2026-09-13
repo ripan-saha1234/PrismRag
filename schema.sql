@@ -1,35 +1,42 @@
--- 1. Create sessions table for anonymous users
+-- 1. Chat Sessions
+-- Tracks anonymous and visitor chat sessions
 CREATE TABLE IF NOT EXISTS chat_sessions (
     id UUID PRIMARY KEY,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     last_active_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 2. Create messages table
+CREATE INDEX IF NOT EXISTS idx_chat_sessions_last_active ON chat_sessions(last_active_at DESC);
+
+-- 2. Chat Messages
+-- Stores conversation history for each session
 CREATE TABLE IF NOT EXISTS chat_messages (
     id BIGSERIAL PRIMARY KEY,
     session_id UUID NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
-    role VARCHAR(20) NOT NULL, 
+    role VARCHAR(20) NOT NULL,
     content TEXT NOT NULL,
-    metadata JSONB,            -- stores extra info like router decision, sources, etc.
+    metadata JSONB,            .
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 3. Create index for fast lookups by session
 CREATE INDEX IF NOT EXISTS idx_chat_messages_session_id ON chat_messages(session_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at ASC);
 
--- 4. Create Onboarding / Poll Questions table (Step 1 & 2 in Flow)
+-- 3. Onboarding / Poll Questions
+-- Configurable interactive onboarding survey questions for chat visitors
 CREATE TABLE IF NOT EXISTS onboarding_questions (
     id SERIAL PRIMARY KEY,
     question_text TEXT NOT NULL,
-    question_type VARCHAR(50) DEFAULT 'mcq', -- 'mcq', 'poll', 'single_choice'
-    options JSONB NOT NULL DEFAULT '[]'::jsonb, -- e.g. ["Engineering", "Product", "Design", "Other"]
+    question_type VARCHAR(50) DEFAULT 'mcq',        -- 'mcq', 'poll', 'single_choice'
+    options JSONB NOT NULL DEFAULT '[]'::jsonb,     -- JSON array of selectable choices
     sort_order INT NOT NULL DEFAULT 1,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 5. Create Session Survey Answers table (Step 4 & 5 in Flow)
+CREATE INDEX IF NOT EXISTS idx_onboarding_questions_order ON onboarding_questions(sort_order ASC, id ASC);
+
+-- 4. Session Survey Answers
 CREATE TABLE IF NOT EXISTS session_survey_answers (
     id BIGSERIAL PRIMARY KEY,
     session_id UUID NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
@@ -40,15 +47,88 @@ CREATE TABLE IF NOT EXISTS session_survey_answers (
 );
 
 CREATE INDEX IF NOT EXISTS idx_session_survey_answers_session_id ON session_survey_answers(session_id);
+CREATE INDEX IF NOT EXISTS idx_session_survey_answers_question_id ON session_survey_answers(question_id);
 
--- 6. In case tables were created with older column schemas, ensure columns exist:
+-- 5. Session AI Insights & Lead Qualification
+CREATE TABLE IF NOT EXISTS session_insights (
+    session_id UUID PRIMARY KEY REFERENCES chat_sessions(id) ON DELETE CASCADE,
+    sentiment VARCHAR(20) NOT NULL DEFAULT 'neutral',
+    sentiment_score NUMERIC(4, 2) DEFAULT 0,
+    lead_score INT DEFAULT 0,
+    icp_fit_score INT DEFAULT 0,
+    lead_type VARCHAR(20) DEFAULT 'cold',         
+    intent VARCHAR(120),
+    topics JSONB DEFAULT '[]'::jsonb,
+    engagement_level VARCHAR(20) DEFAULT 'low',    
+    summary TEXT,
+    icp_reasoning TEXT,
+    profile_signals JSONB DEFAULT '[]'::jsonb,
+    chat_signals JSONB DEFAULT '[]'::jsonb,
+    recommended_action TEXT,
+    ideal_customer_verdict TEXT,
+    raw_analysis JSONB,
+    analyzed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_session_insights_lead_score ON session_insights(lead_score DESC);
+CREATE INDEX IF NOT EXISTS idx_session_insights_lead_type ON session_insights(lead_type);
+CREATE INDEX IF NOT EXISTS idx_session_insights_sentiment ON session_insights(sentiment);
+CREATE INDEX IF NOT EXISTS idx_session_insights_analyzed_at ON session_insights(analyzed_at DESC);
+
+-- 6. Tracked Company Pages
+CREATE TABLE IF NOT EXISTS tracked_pages (
+    id SERIAL PRIMARY KEY,
+    label VARCHAR NOT NULL,
+    url TEXT NOT NULL UNIQUE,
+    page_type VARCHAR NOT NULL DEFAULT 'auto',     
+    is_active BOOLEAN DEFAULT TRUE,
+    page_content_cache TEXT,
+    cache_updated_at TIMESTAMP WITH TIME ZONE,
+    last_fetched_at TIMESTAMP WITH TIME ZONE,
+    last_fetch_status VARCHAR,                     
+    last_fetch_error TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_tracked_pages_is_active ON tracked_pages(is_active);
+
+-- 7. Hook Messages
+CREATE TABLE IF NOT EXISTS hook_messages (
+    id SERIAL PRIMARY KEY,
+    message_text TEXT NOT NULL,
+    sort_order INT NOT NULL DEFAULT 1,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_hook_messages_order ON hook_messages(sort_order ASC, id ASC);
+
+-- 8. Migrations & Retroactive Column Fixes (for existing deployments)
 ALTER TABLE onboarding_questions ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
 ALTER TABLE onboarding_questions ADD COLUMN IF NOT EXISTS sort_order INT DEFAULT 1;
 ALTER TABLE onboarding_questions ADD COLUMN IF NOT EXISTS question_type VARCHAR(50) DEFAULT 'mcq';
 ALTER TABLE onboarding_questions ADD COLUMN IF NOT EXISTS options JSONB DEFAULT '[]'::jsonb;
+
 ALTER TABLE session_survey_answers ADD COLUMN IF NOT EXISTS selected_option TEXT;
 
--- 7. Seed initial default questions if needed
+ALTER TABLE tracked_pages ADD COLUMN IF NOT EXISTS page_content_cache TEXT;
+ALTER TABLE tracked_pages ADD COLUMN IF NOT EXISTS cache_updated_at TIMESTAMP WITH TIME ZONE;
+
+-- Migration handling for legacy session_survey_answers schema (selected_options -> selected_option)
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'session_survey_answers' AND column_name = 'selected_options'
+    ) THEN
+        ALTER TABLE session_survey_answers ALTER COLUMN selected_options DROP NOT NULL;
+        UPDATE session_survey_answers 
+        SET selected_option = COALESCE(selected_option, selected_options::text)
+        WHERE selected_option IS NULL;
+    END IF;
+END $$;
+
+-- 9. Seed Initial Default Onboarding Questions
 INSERT INTO onboarding_questions (question_text, question_type, options, sort_order, is_active)
 SELECT 'What is your primary role or interest?', 'mcq', '["Software Engineer / Developer", "Product Manager / Designer", "Business / Leadership", "Researcher / Student", "Other"]'::jsonb, 1, TRUE
 WHERE NOT EXISTS (SELECT 1 FROM onboarding_questions);

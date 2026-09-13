@@ -240,19 +240,51 @@ app.post("/api/onboarding/answers", async (req, res) => {
     );
 
     // Upsert answer - populate both selected_option and selected_options (as JSON array) to satisfy legacy schemas
-    const result = await pool.query(
-      `INSERT INTO session_survey_answers (session_id, question_id, selected_option, selected_options, created_at)
-       VALUES ($1, $2, $3, $4::jsonb, NOW())
-       ON CONFLICT (session_id, question_id) 
-       DO UPDATE SET selected_option = $3, selected_options = $4::jsonb, created_at = NOW()
-       RETURNING *`,
-      [sessionId, questionId, selectedOption, JSON.stringify([selectedOption])]
-    );
+    const numericQuestionId = parseInt(questionId, 10);
+    if (!isNaN(numericQuestionId)) {
+      const result = await pool.query(
+        `INSERT INTO session_survey_answers (session_id, question_id, selected_option, selected_options, created_at)
+         VALUES ($1, $2, $3, $4::jsonb, NOW())
+         ON CONFLICT (session_id, question_id) 
+         DO UPDATE SET selected_option = $3, selected_options = $4::jsonb, created_at = NOW()
+         RETURNING *`,
+        [sessionId, numericQuestionId, selectedOption, JSON.stringify([selectedOption])]
+      );
+      return res.status(200).json({ success: true, answer: result.rows[0] });
+    }
 
-    return res.status(200).json({ success: true, answer: result.rows[0] });
+    return res.status(200).json({ success: true, note: "Session active; non-numeric questionId skipped from DB table" });
   } catch (error) {
     console.error("Error saving survey answer:", error);
     return res.status(500).json({ error: "Failed to save survey answer." });
+  }
+});
+
+// Initialize or ping a visitor chat session
+app.post("/api/sessions/init", async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    if (!sessionId) {
+      return res.status(400).json({ error: "sessionId is required." });
+    }
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(sessionId)) {
+      return res.status(400).json({ error: "Invalid session UUID format." });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO chat_sessions (id, last_active_at)
+       VALUES ($1, NOW())
+       ON CONFLICT (id) DO UPDATE SET last_active_at = NOW()
+       RETURNING id, created_at, last_active_at`,
+      [sessionId]
+    );
+
+    return res.status(200).json({ success: true, session: result.rows[0] });
+  } catch (error) {
+    console.error("Init session error:", error);
+    return res.status(500).json({ error: error.message ?? "Failed to initialize session." });
   }
 });
 
